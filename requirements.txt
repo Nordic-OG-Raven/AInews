@@ -1,0 +1,9 @@
+langchain
+langchain-groq
+langchain-openai
+feedparser
+requests
+beautifulsoup4
+python-dotenv
+tqdm
+arxiv
