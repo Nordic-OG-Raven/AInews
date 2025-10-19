@@ -172,6 +172,7 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
         <body>
             <div class="container">
                 <div class="header">
+                    <img src="https://raw.githubusercontent.com/Nordic-OG-Raven/AInews/main/assets/nordic-raven-logo.png" alt="Nordic Raven Solutions" style="height: 40px; margin-bottom: 15px;">
                     <h1>{schedule['name']}</h1>
                     <p>{schedule['description']}</p>
                     <p style="font-size: 14px; margin-top: 10px; color: white; opacity: 0.9;">{datetime.now().strftime('%B %d, %Y')}</p>
@@ -187,6 +188,11 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                         <div class="joke-label">💡 Joke of the Day</div>
                         <div class="joke-text">{joke}</div>
                         <div style="margin-top: 12px; font-size: 13px; color: #9ca3af; font-style: normal;">(See "{joke_article_title}" below to get it)</div>
+                    </div>
+                    <div style="background-color: #f0f8ff; border-left: 4px solid #4a90e2; padding: 12px; margin: 20px 0; border-radius: 0 6px 6px 0;">
+                        <p style="margin: 0; color: #2c3e50; font-size: 12px; line-height: 1.4;">
+                            <strong>💡 Tip:</strong> Click any article title below to read the full article from the original source.
+                        </p>
                     </div>
         """
         for article in categorized_articles[featured_category]:
@@ -221,6 +227,10 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                 </div>
                 <div class="footer">
                     <p>AI News Digest • Delivered with 🤖</p>
+                    <p style="font-size: 11px; margin-top: 10px; opacity: 0.8;">
+                        This newsletter was created using an AI-powered MAS (Multi-Agent System) that automatically curates, categorizes, and summarizes AI news from multiple sources. 
+                        <a href="https://github.com/Nordic-OG-Raven/AInews" style="color: #4a90e2;">View the source code on GitHub</a>
+                    </p>
                 </div>
             </div>
         </body>
