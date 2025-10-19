@@ -1,5 +1,6 @@
 import os
 import random
+import json
 from collections import defaultdict
 from datetime import datetime
 from dotenv import load_dotenv
@@ -17,6 +18,14 @@ from config import get_current_day_schedule, get_schedule_for_day, WEEKLY_SCHEDU
 from tqdm import tqdm
 
 ARTICLES_PER_CATEGORY = 5  # Increased since we're focusing on one category per day
+
+def load_cached_data():
+    """Load cached test data for fast testing"""
+    try:
+        with open('test_data.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
 
 def run_digest_for_day(day_name=None, test_mode=False):
     """
@@ -45,6 +54,37 @@ def run_digest_for_day(day_name=None, test_mode=False):
     print(f"{'='*60}\n")
     
     target_category = schedule['category']
+    
+    # Fast test mode using cached data
+    if test_mode and test_mode != "production":
+        print("🚀 FAST TEST MODE: Using cached data (no LLM calls)")
+        cached_data = load_cached_data()
+        if cached_data:
+            # Use cached articles for the target category
+            cached_articles = cached_data['cached_articles'][:ARTICLES_PER_CATEGORY]
+            final_categorized_articles = {target_category: cached_articles}
+            joke = cached_data['cached_joke']
+            joke_article = cached_data['cached_joke_article']
+            
+            print(f"Using {len(cached_articles)} cached articles for {target_category}")
+            print(f"Cached joke: {joke}")
+            
+            # Generate HTML with cached data
+            html_content = format_themed_email(schedule, final_categorized_articles, joke, joke_article)
+            
+            # Save HTML file
+            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+            output_dir = "outputs/email_archives"
+            os.makedirs(output_dir, exist_ok=True)
+            output_file = f"{output_dir}/{day_name or 'today'}_{timestamp}.html"
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            print(f"✅ FAST TEST: Email saved to {output_file}")
+            return
+        else:
+            print("⚠️ No cached data found, falling back to full processing...")
+    
+    # Full processing (production or when no cached data)
     
     # 1. Fetch all potential articles from all sources
     all_articles = fetch_all_articles()
@@ -230,6 +270,9 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                     <p style="font-size: 11px; margin-top: 10px; opacity: 0.8;">
                         This newsletter was created using an AI-powered MAS (Multi-Agent System) that automatically curates, categorizes, and summarizes AI news from multiple sources. 
                         <a href="https://github.com/Nordic-OG-Raven/AInews" style="color: #4a90e2;">View the source code on GitHub</a>
+                    </p>
+                    <p style="font-size: 11px; margin-top: 8px; opacity: 0.9;">
+                        <strong>Open to work & collaboration:</strong> <a href="mailto:jonas.haahr@aol.com" style="color: #4a90e2;">jonas.haahr@aol.com</a> - Let's build something amazing together! 🚀
                     </p>
                 </div>
             </div>
