@@ -18,14 +18,20 @@ WEEKLY_SCHEDULE = {
         "name": "Ethics Friday",
         "category": "AI Ethics, Policy & Society",
         "description": "AI safety, regulation, societal impact, and policy debates"
+    },
+    "saturday": {
+        "name": "Data Science Saturday",
+        "category": "Data Science & Analytics",
+        "description": "Data science, analytics, SQL, statistics, and practical data insights"
     }
 }
 
 # Map categories to their schedule day for reverse lookup
 CATEGORY_TO_DAY = {
     "AI Research & Technical Deep Dives": "monday",
-    "AI Business & Industry News": "wednesday",
-    "AI Ethics, Policy & Society": "friday"
+    "AI Business & Industry News": "wednesday", 
+    "AI Ethics, Policy & Society": "friday",
+    "Data Science & Analytics": "saturday"
 }
 
 def get_schedule_for_day(day_name):

@@ -25,12 +25,16 @@ SOURCES = {
         # Research & Technical Blogs / Papers
         "https://blog.research.google/feeds/posts/default?category=Artificial+Intelligence",
         "https://openai.com/blog/rss.xml",
-        "http://www.semanticscholar.org/rss/daily" # Fallback for research papers
+        "http://www.semanticscholar.org/rss/daily", # Fallback for research papers
+        # Data Science & Analytics
+        "https://www.kdnuggets.com/feed",
+        "https://towardsdatascience.com/feed",
+        "https://www.datacamp.com/blog/rss.xml"
     ],
-    "hackernews_keywords": ['ai', 'ml', 'llm', 'transformer', 'neural network', 'openai', 'deepmind', 'anthropic', 'pytorch', 'tensorflow', 'diffusion model', 'attention is all you need']
+    "hackernews_keywords": ['ai', 'ml', 'llm', 'transformer', 'neural network', 'openai', 'deepmind', 'anthropic', 'pytorch', 'tensorflow', 'diffusion model', 'attention is all you need', 'data science', 'sql', 'analytics', 'statistics', 'pandas', 'numpy', 'scikit-learn', 'snowflake', 'bigquery', 'tableau', 'power bi']
 }
 
-CATEGORIES = ["AI Research & Technical Deep Dives", "AI Business & Industry News", "AI Ethics, Policy & Society", "Irrelevant"]
+CATEGORIES = ["AI Research & Technical Deep Dives", "AI Business & Industry News", "AI Ethics, Policy & Society", "Data Science & Analytics", "Irrelevant"]
 
 def fetch_arxiv_papers():
     """
@@ -148,7 +152,7 @@ def categorize_article(article):
     """
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
-        ("system", f"You are an expert editor for an AI research newsletter. Your job is to categorize articles based on their title and summary. Please assign the following article to one of these categories: {', '.join(CATEGORIES)}. Respond with only the category name and nothing else."),
+        ("system", f"You are an expert editor for an AI and data science newsletter. Your job is to categorize articles based on their title and summary. Please assign the following article to one of these categories: {', '.join(CATEGORIES)}. Respond with only the category name and nothing else."),
         ("human", "Title: {title}\nSummary: {summary}")
     ])
     parser = StrOutputParser()
