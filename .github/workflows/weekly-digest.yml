@@ -4,14 +4,16 @@ on:
   schedule:
     # ML Monday - 8:00 AM UTC every Monday
     - cron: '0 8 * * 1'
-    # Business Briefing - 8:00 AM UTC every Wednesday
+    # ML Business Briefing - 8:00 AM UTC every Wednesday
     - cron: '0 8 * * 3'
     # Ethics Friday - 8:00 AM UTC every Friday
     - cron: '0 8 * * 5'
+    # Data Science Saturday - 8:00 AM UTC every Saturday
+    - cron: '0 8 * * 6'
   workflow_dispatch:  # Allows manual triggering
     inputs:
       day:
-        description: 'Which day to run (monday, wednesday, friday, or test-all)'
+        description: 'Which day to run (monday, wednesday, friday, saturday, or test-all)'
         required: false
         default: 'today'
 

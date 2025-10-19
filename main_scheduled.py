@@ -6,18 +6,22 @@ from datetime import datetime
 from dotenv import load_dotenv
 from src.agents import (
     fetch_all_articles,
+    fetch_articles_for_category,
     categorize_article,
     get_full_article_text,
     summarize_article,
     generate_joke,
     format_html_email,
     send_email,
-    send_to_linkedin
+    send_to_linkedin,
+    score_article_quality,
+    ensure_minimum_articles
 )
 from config import get_current_day_schedule, get_schedule_for_day, WEEKLY_SCHEDULE
 from tqdm import tqdm
 
 ARTICLES_PER_CATEGORY = 5  # Increased since we're focusing on one category per day
+MIN_ARTICLES_REQUIRED = 3  # Minimum articles required for a digest
 
 def load_cached_data():
     """Load cached test data for fast testing"""
@@ -34,7 +38,7 @@ def run_digest_for_day(day_name=None, test_mode=False):
     Args:
         day_name: Specific day to run (e.g., 'monday', 'wednesday', 'friday')
                   If None, uses current day
-        test_mode: If True, saves HTML but doesn't send email
+        test_mode: If True, uses fast cached mode (no LLM calls)
     """
     load_dotenv()
     
@@ -56,20 +60,29 @@ def run_digest_for_day(day_name=None, test_mode=False):
     target_category = schedule['category']
     
     # Fast test mode using cached data
-    if test_mode and test_mode != "production":
+    if test_mode:
         print("🚀 FAST TEST MODE: Using cached data (no LLM calls)")
         cached_data = load_cached_data()
         if cached_data:
-            # Use cached articles for the target category
-            cached_articles = cached_data['cached_articles'][:ARTICLES_PER_CATEGORY]
-            final_categorized_articles = {target_category: cached_articles}
-            joke = cached_data['cached_joke']
-            joke_article = cached_data['cached_joke_article']
+            # For test mode, just show the email structure with placeholder content
+            print(f"📧 Generating {schedule['name']} email structure...")
+            print(f"🎯 Target category: {target_category}")
+            print("📝 Using placeholder content for fast testing")
             
-            print(f"Using {len(cached_articles)} cached articles for {target_category}")
-            print(f"Cached joke: {joke}")
+            # Create minimal test content
+            test_articles = [{
+                "title": f"Sample {target_category} Article {i+1}",
+                "link": "https://example.com",
+                "source": "Test Source",
+                "summary": f"This is a sample article summary for testing the {target_category} category. It demonstrates how the email will look with real content.",
+                "published": "2025-10-19T12:00:00+00:00"
+            } for i in range(3)]
             
-            # Generate HTML with cached data
+            final_categorized_articles = {target_category: test_articles}
+            joke = f"Why did the data scientist break up with their model? Because it kept overfitting to their expectations!"
+            joke_article = {"title": "Sample Article 1", "link": "https://example.com"}
+            
+            # Generate HTML with test data
             html_content = format_themed_email(schedule, final_categorized_articles, joke, joke_article)
             
             # Save HTML file
@@ -79,15 +92,15 @@ def run_digest_for_day(day_name=None, test_mode=False):
             output_file = f"{output_dir}/{day_name or 'today'}_{timestamp}.html"
             with open(output_file, 'w', encoding='utf-8') as f:
                 f.write(html_content)
-            print(f"✅ FAST TEST: Email saved to {output_file}")
+            print(f"✅ FAST TEST: Email structure saved to {output_file}")
             return
         else:
             print("⚠️ No cached data found, falling back to full processing...")
     
-    # Full processing (production or when no cached data)
+    # Full processing (production)
     
-    # 1. Fetch all potential articles from all sources
-    all_articles = fetch_all_articles()
+    # 1. Fetch articles from relevant sources only (efficient)
+    all_articles = fetch_articles_for_category(target_category)
     
     # 2. Source Validation Step
     print("\n--- Source Validation Report ---")
@@ -114,17 +127,32 @@ def run_digest_for_day(day_name=None, test_mode=False):
 
     # 4. Select top N articles from the target category
     if not categorized_articles:
-        print(f"No relevant articles found for {target_category}. Exiting.")
+        print(f"Not enough articles found for {target_category}. Found {len(categorized_articles.get(target_category, []))}, need at least {MIN_ARTICLES_REQUIRED}. Exiting.")
         return
 
     final_articles_to_summarize = []
     final_categorized_articles = {}
     
-    for category, articles in categorized_articles.items():
-        sorted_articles = sorted(articles, key=lambda x: x.get('published', ''), reverse=True)
-        selected = sorted_articles[:ARTICLES_PER_CATEGORY]
-        final_categorized_articles[category] = selected
-        final_articles_to_summarize.extend(selected)
+    # Quality scoring and selection for target category
+    if target_category in categorized_articles:
+        target_articles = categorized_articles[target_category]
+        
+        # Score articles by quality
+        scored_articles = []
+        for article in target_articles:
+            score = score_article_quality(article, target_category)
+            scored_articles.append((score, article))
+        
+        # Sort by quality score (highest first), then by recency
+        scored_articles.sort(key=lambda x: (-x[0], x[1].get('published', '')), reverse=True)
+        
+        # Take top articles
+        final_articles_to_summarize = [article for score, article in scored_articles[:ARTICLES_PER_CATEGORY]]
+        
+        # Ensure minimum articles with fallback content
+        final_articles_to_summarize = ensure_minimum_articles(final_articles_to_summarize, target_category, MIN_ARTICLES_REQUIRED)
+        
+        final_categorized_articles[target_category] = final_articles_to_summarize
 
     print(f"\nFound {len(final_articles_to_summarize)} articles for {target_category}. Summarizing...")
 
@@ -159,23 +187,23 @@ def run_digest_for_day(day_name=None, test_mode=False):
     # 8. Format email with themed title
     html_content = format_themed_email(schedule, final_categorized_articles, joke, random_article)
     
-    # 9. Send email (or just save if test mode)
-    if test_mode:
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        output_dir = "outputs/email_archives"
-        os.makedirs(output_dir, exist_ok=True)
-        output_file = f"{output_dir}/{day_name or 'today'}_{timestamp}.html"
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        print(f"TEST MODE: Email saved to {output_file}")
-    else:
-        send_email(html_content)
-        
-        # 10. Post to LinkedIn (production only, not in test mode)
-        print("\n" + "="*60)
-        print("  LINKEDIN POSTING")
-        print("="*60)
-        send_to_linkedin(final_categorized_articles, schedule)
+    # 9. Always send email and save archive
+    send_email(html_content)
+    
+    # 10. Save email archive
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    output_dir = "outputs/email_archives"
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = f"{output_dir}/{day_name or 'today'}_{timestamp}.html"
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write(html_content)
+    print(f"✅ Email sent and saved to {output_file}")
+    
+    # 11. Post to LinkedIn
+    print("\n" + "="*60)
+    print("  LINKEDIN POSTING")
+    print("="*60)
+    send_to_linkedin(final_categorized_articles, schedule)
 
 def format_themed_email(schedule, categorized_articles, joke, joke_article):
     """
@@ -220,7 +248,7 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                 <div class="content">
     """
     
-    # Featured category with joke
+    # Featured category with joke at top, then tip, then joke article, then others
     if featured_category in categorized_articles and categorized_articles[featured_category]:
         html += f"""
                     <h2>{featured_category}</h2>
@@ -235,14 +263,29 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                         </p>
                     </div>
         """
+        
+        # First, add the joke article
         for article in categorized_articles[featured_category]:
-            html += f"""
+            if joke_article and article['link'] == joke_article.get('link'):
+                html += f"""
                     <div class="article">
-                        <h3><a href="{article['link']}">{article['title']}</a></h3>
-                        <p class="source">Source: {article['source']}</p>
-                        <p>{article['summary']}</p>
+                        <h3><a href="{article['link']}" style="color: #2c3e50; text-decoration: none;">{article['title']}</a></h3>
+                        <div class="source">Source: {article['source']}</div>
+                        <div class="summary">{article['summary']}</div>
                     </div>
-            """
+                """
+                break
+        
+        # Then add the remaining articles
+        for article in categorized_articles[featured_category]:
+            if not joke_article or article['link'] != joke_article.get('link'):
+                html += f"""
+                    <div class="article">
+                        <h3><a href="{article['link']}" style="color: #2c3e50; text-decoration: none;">{article['title']}</a></h3>
+                        <div class="source">Source: {article['source']}</div>
+                        <div class="summary">{article['summary']}</div>
+                    </div>
+                """
     
     # Other categories (if any articles found)
     other_categories = {k: v for k, v in categorized_articles.items() if k != featured_category and v}
