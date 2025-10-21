@@ -208,9 +208,10 @@ def fetch_articles_for_category(target_category):
 def fetch_all_articles():
     """
     Fetches all articles from all defined sources into a single list.
+    Uses a 7-day lookback window for weekly digests.
     """
     all_articles = []
-    yesterday_utc = datetime.now(timezone.utc) - timedelta(days=1)
+    last_week_utc = datetime.now(timezone.utc) - timedelta(days=7)
     
     # --- Direct arXiv Fetch ---
     all_articles.extend(fetch_arxiv_papers())
@@ -221,7 +222,7 @@ def fetch_all_articles():
         source_title = feed.feed.title if hasattr(feed.feed, 'title') else url
         for entry in feed.entries:
             published_time = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc) if hasattr(entry, 'published_parsed') else datetime.now(timezone.utc)
-            if published_time > yesterday_utc:
+            if published_time > last_week_utc:
                 all_articles.append({
                     "source": source_title,
                     "title": entry.title,
@@ -240,7 +241,7 @@ def fetch_all_articles():
             story = requests.get(story_url).json()
             if story and story.get("time"):
                 published_time = datetime.fromtimestamp(story["time"], tz=timezone.utc)
-                if published_time > yesterday_utc:
+                if published_time > last_week_utc:
                     title = story.get('title', '').lower()
                     if any(keyword in title for keyword in SOURCES["hackernews_keywords"]["ai_ml"] + SOURCES["hackernews_keywords"]["data_science"]):
                         hn_articles.append({
