@@ -7,3 +7,4 @@ beautifulsoup4
 python-dotenv
 tqdm
 arxiv
+pyyaml>=6.0

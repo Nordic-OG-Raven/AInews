@@ -17,14 +17,24 @@ from src.agents import (
     score_article_quality,
     ensure_minimum_articles,
     relevance_gate_agent,
-    negative_filter_agent
+    negative_filter_agent,
+    get_llm
 )
+from src.refresher import get_refresher_for_category, generate_refresher_explanation, format_refresher_html
 from config import get_current_day_schedule, get_schedule_for_day, WEEKLY_SCHEDULE
 from tqdm import tqdm
 
 ARTICLES_PER_CATEGORY = 5  # Increased since we're focusing on one category per day
 MIN_ARTICLES_REQUIRED = 3  # Minimum articles required for a digest
 MIN_QUALITY_THRESHOLD = 6.0  # Minimum quality score (0-10) to publish article
+
+# Map newsletter categories to refresher categories
+CATEGORY_TO_REFRESHER = {
+    "AI Research & Technical Deep Dives": "ml_research",
+    "AI Business & Industry News": "ai_business",
+    "AI Ethics, Policy & Society": "ai_ethics",
+    "Data Science & Analytics": "data_science"
+}
 
 def load_cached_data():
     """Load cached test data for fast testing"""
@@ -227,8 +237,19 @@ def run_digest_for_day(day_name=None, test_mode=False):
     joke = generate_joke(random_article)
     print(f"Joke of the day:\n{joke}\n")
 
-    # 8. Format email with themed title
-    html_content = format_themed_email(schedule, final_categorized_articles, joke, random_article)
+    # 8. Get refresher of the day
+    refresher_category_map = {target_category: CATEGORY_TO_REFRESHER.get(target_category)}
+    refresher_topic = get_refresher_for_category(refresher_category_map)
+    if refresher_topic:
+        llm = get_llm()
+        refresher_explanation = generate_refresher_explanation(refresher_topic, llm)
+        refresher_html = format_refresher_html(refresher_topic, refresher_explanation)
+        print(f"Refresher: {refresher_topic['name']}\n")
+    else:
+        refresher_html = None
+
+    # 9. Format email with themed title
+    html_content = format_themed_email(schedule, final_categorized_articles, joke, random_article, refresher_html)
     
     # 9. Always send email and save archive
     send_email(html_content)
@@ -282,10 +303,10 @@ def format_article_metrics(article):
     metrics_html += '</ul>'
     return metrics_html
 
-def format_themed_email(schedule, categorized_articles, joke, joke_article):
+def format_themed_email(schedule, categorized_articles, joke, joke_article, refresher_html=None):
     """
-    Formats the categorized articles and joke into a themed HTML email.
-    Joke appears right before the featured category, followed by other categories.
+    Formats the categorized articles, joke, and refresher into a themed HTML email.
+    Order: Header → Joke → Refresher → Tip → Articles
     """
     featured_category = schedule['category']
     joke_article_title = joke_article['title'][:60] + "..." if len(joke_article['title']) > 60 else joke_article['title']
@@ -337,6 +358,13 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                         <div class="joke-text">{joke}</div>
                         <div style="margin-top: 12px; font-size: 13px; color: #9ca3af; font-style: normal;">(See "{joke_article_title}" below to get it)</div>
                     </div>
+        """
+        
+        # Add refresher if available
+        if refresher_html:
+            html += refresher_html
+        
+        html += """
                     <div style="background-color: #f0f8ff; border-left: 4px solid #4a90e2; padding: 12px; margin: 20px 0; border-radius: 0 6px 6px 0;">
                         <p style="margin: 0; color: #2c3e50; font-size: 12px; line-height: 1.4;">
                             <strong>💡 Tip:</strong> Click any article title below to read the full article from the original source.

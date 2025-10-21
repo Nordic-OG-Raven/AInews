@@ -44,4 +44,4 @@ outputs/
 *.log
 
 # Test files
-test_*.py
+test_*.pydata/
