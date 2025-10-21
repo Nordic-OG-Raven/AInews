@@ -5,11 +5,14 @@ An automated Python-based system that fetches daily AI tech news from multiple s
 ## Features
 
 - **Multi-source news fetching** from arXiv, Hacker News, TechCrunch, VentureBeat, Wired, and more
-- **AI-powered categorization** into relevant topics (Research, Business, Ethics & Policy)
-- **Intelligent summarization** using LangChain with OpenAI or Groq
+- **AI-powered categorization** using hybrid approach (rule-based + LLM)
+- **LLM multi-dimensional quality scoring** (novelty, practical applicability, significance)
+- **Citation tracking** via Semantic Scholar API for arXiv papers
+- **Transparent quality metrics** displayed with each article
+- **Intelligent summarization** using LangChain with Groq (free tier)
 - **Automated email delivery** with beautiful HTML formatting
-- **Daily execution** via GitHub Actions
-- **Joke generator** for a touch of humor
+- **Weekly themed execution** via GitHub Actions (ML Monday, Business Briefing, Ethics Friday, Data Science Saturday)
+- **Contextual joke generator** that references featured articles
 
 ## Quick Start
 
@@ -53,12 +56,14 @@ AInews/
 ## How It Works
 
 1. **Fetch** articles from multiple sources (arXiv API, RSS feeds, Hacker News)
-2. **Categorize** using LLM to assign articles to relevant categories
-3. **Select** top N articles from each category based on recency
-4. **Summarize** articles using LLM for high-quality, concise summaries
-5. **Generate** a tech-themed joke based on a random article
-6. **Format** content into beautiful HTML email
-7. **Send** email digest to configured recipient
+2. **Categorize** using hybrid approach (rule-based + LLM) to assign articles to relevant categories
+3. **Score** each article using LLM multi-dimensional scoring (novelty, practical applicability, significance)
+4. **Select** top N articles from each category based on quality scores (not recency)
+5. **Enhance** articles with citation counts (via Semantic Scholar API for arXiv papers)
+6. **Summarize** articles using LLM for high-quality, concise summaries
+7. **Generate** a tech-themed joke based on a random article
+8. **Format** content into beautiful HTML email with quality metrics displayed
+9. **Send** email digest to configured recipient
 
 ## Requirements
 

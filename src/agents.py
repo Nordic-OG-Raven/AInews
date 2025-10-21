@@ -142,6 +142,40 @@ def fetch_data_science_sources():
     
     return articles
 
+def deduplicate_articles(articles):
+    """
+    Remove duplicate articles based on URL and title similarity.
+    Keeps the first occurrence of each unique article.
+    """
+    seen_urls = set()
+    seen_titles = set()
+    unique_articles = []
+    
+    for article in articles:
+        url = article.get('link', '').strip().lower()
+        title = article.get('title', '').strip().lower()
+        
+        # Skip if we've seen this exact URL
+        if url and url in seen_urls:
+            continue
+        
+        # Skip if we've seen this exact title
+        if title and title in seen_titles:
+            continue
+        
+        # Add to unique list
+        unique_articles.append(article)
+        if url:
+            seen_urls.add(url)
+        if title:
+            seen_titles.add(title)
+    
+    removed = len(articles) - len(unique_articles)
+    if removed > 0:
+        print(f"  → Removed {removed} duplicate articles")
+    
+    return unique_articles
+
 def fetch_articles_for_category(target_category):
     """
     Fetch articles only from sources relevant to the target category.
@@ -165,6 +199,9 @@ def fetch_articles_for_category(target_category):
     elif target_category == "AI Ethics, Policy & Society":
         print("⚖️ Fetching AI Ethics sources only...")
         articles.extend(fetch_all_articles())  # All RSS + HN
+    
+    # Deduplicate before returning
+    articles = deduplicate_articles(articles)
     
     return articles
 
@@ -220,41 +257,92 @@ def fetch_all_articles():
         
     return all_articles
 
+def get_citation_count(article):
+    """
+    Get citation count for arXiv papers via Semantic Scholar API.
+    Returns 0 for non-arXiv articles or if API fails.
+    """
+    if 'arxiv' not in article['link'].lower():
+        return 0
+    
+    try:
+        # Extract arXiv ID from link
+        import re
+        arxiv_match = re.search(r'arxiv\.org/abs/(\d+\.\d+)', article['link'])
+        if not arxiv_match:
+            return 0
+        
+        arxiv_id = arxiv_match.group(1)
+        
+        # Query Semantic Scholar API
+        import requests
+        url = f"https://api.semanticscholar.org/graph/v1/paper/arXiv:{arxiv_id}?fields=citationCount"
+        response = requests.get(url, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return data.get('citationCount', 0)
+        return 0
+    except:
+        return 0
+
 def score_article_quality(article, target_category):
     """
-    Score article quality based on relevance and content quality.
-    Higher score = better article.
+    LLM-based multi-dimensional scoring for article quality.
+    Scores on: novelty, practical applicability, and significance.
+    Returns a dict with individual scores and final weighted score.
     """
-    title = article['title'].lower()
-    summary = article.get('summary', '').lower()
-    score = 0
+    llm = get_llm()
     
-    if target_category == "Data Science & Analytics":
-        # High-value keywords
-        high_value = ['sql', 'analytics', 'data science', 'tableau', 'power bi', 'snowflake', 'bigquery', 'etl', 'pipeline', 'warehouse', 'bi tool', 'dashboard']
-        for keyword in high_value:
-            if keyword in title:
-                score += 3
-            if keyword in summary:
-                score += 1
-        
-        # Medium-value keywords  
-        medium_value = ['python data', 'r programming', 'jupyter', 'pandas', 'numpy', 'statistics', 'visualization', 'tutorial', 'guide', 'best practices']
-        for keyword in medium_value:
-            if keyword in title:
-                score += 2
-            if keyword in summary:
-                score += 1
-        
-        # Content quality indicators
-        if len(summary) > 200:  # Substantial content
-            score += 1
-        if 'tutorial' in title or 'guide' in title:
-            score += 2
-        if 'tutorial' in summary or 'guide' in summary:
-            score += 1
+    # Get citation count for context
+    citation_count = get_citation_count(article)
     
-    return score
+    prompt = f"""Rate this article for a newsletter targeting {target_category} readers (ML engineers, data scientists, AI researchers).
+
+Title: {article['title']}
+Summary: {article.get('summary', '')[:500]}
+Source: {article.get('source', 'Unknown')}
+Citations: {citation_count if citation_count > 0 else 'N/A'}
+
+Rate on three dimensions (0-10 each):
+1. NOVELTY: New methods, breakthrough results, innovative approaches
+2. PRACTICAL: Can readers immediately apply this? Tools, tutorials, how-tos
+3. SIGNIFICANCE: Will this matter in 6 months? Industry impact, paradigm shifts
+
+Respond ONLY with three numbers separated by commas: novelty,practical,significance
+Example: 8,6,9"""
+
+    try:
+        response = llm.invoke(prompt)
+        scores_text = response.content if hasattr(response, 'content') else str(response)
+        scores = [float(s.strip()) for s in scores_text.split(',')[:3]]
+        
+        novelty, practical, significance = scores
+        
+        # Weighted final score: 40% novelty, 30% practical, 30% significance
+        final_score = 0.4 * novelty + 0.3 * practical + 0.3 * significance
+        
+        # Store scores in article for display
+        article['metrics'] = {
+            'novelty': round(novelty, 1),
+            'practical': round(practical, 1),
+            'significance': round(significance, 1),
+            'final_score': round(final_score, 1),
+            'citations': citation_count
+        }
+        
+        return final_score
+    except Exception as e:
+        print(f"LLM scoring failed for '{article['title']}': {e}")
+        # Fallback to neutral score
+        article['metrics'] = {
+            'novelty': 5.0,
+            'practical': 5.0,
+            'significance': 5.0,
+            'final_score': 5.0,
+            'citations': citation_count
+        }
+        return 5.0
 
 def generate_dynamic_fallback(target_category, needed_count):
     """
@@ -392,6 +480,113 @@ def pre_filter_article(article):
         return "AI Business & Industry News"
     
     return None  # Let LLM decide
+
+def relevance_gate_agent(article, target_category):
+    """
+    Agent 1: Binary relevance gate. Returns True if article is relevant, False otherwise.
+    This is a strict gatekeeper that prevents irrelevant articles from reaching scoring.
+    """
+    llm = get_llm()
+    
+    # Category-specific examples for strict filtering
+    if target_category == "Data Science & Analytics":
+        positive_examples = """
+RELEVANT Examples (say YES):
+- "New SQL window functions in PostgreSQL 15"
+- "Tableau 2025 adds real-time collaboration features"
+- "A/B testing best practices for data teams"
+- "Pandas vs Polars: Performance comparison"
+- "Building ETL pipelines with Apache Airflow"
+"""
+        negative_examples = """
+IRRELEVANT Examples (say NO):
+- "Taiwan should build a space-enabled kill web" → Military strategy, NOT data science
+- "AWS brain drain sends service down" → Tech industry drama, NOT data science tools
+- "Python 3.14 removes GIL" → Programming language, NOT data science
+- "Uber drivers protest gig work conditions" → Labor/policy, NOT data science
+- "OpenAI raises $10B in funding" → Business news, NOT data science
+"""
+    elif target_category == "AI Research & Technical Deep Dives":
+        positive_examples = """
+RELEVANT Examples (say YES):
+- "Transformer architecture breakthrough"
+- "New reinforcement learning algorithm"
+- "Computer vision model for medical imaging"
+"""
+        negative_examples = """
+IRRELEVANT Examples (say NO):
+- "OpenAI acquires startup for $500M" → Business
+- "EU passes AI regulation" → Policy
+- "Data warehouse comparison" → Data Science
+"""
+    else:
+        positive_examples = ""
+        negative_examples = ""
+    
+    prompt = f"""You are a strict gatekeeper for a newsletter category: {target_category}.
+
+Your ONLY job: Answer YES or NO. Is this article relevant to {target_category}?
+
+{positive_examples}
+{negative_examples}
+
+Article to evaluate:
+Title: {article['title']}
+Summary: {article.get('summary', '')[:300]}
+
+Answer ONLY with YES or NO (nothing else):"""
+    
+    try:
+        response = llm.invoke(prompt)
+        answer = (response.content if hasattr(response, 'content') else str(response)).strip().upper()
+        return answer == "YES"
+    except Exception as e:
+        print(f"Relevance gate failed for '{article['title']}': {e}")
+        return False  # Fail closed - reject on error
+
+def negative_filter_agent(article, target_category):
+    """
+    Agent 3: Negative filter with veto power. 
+    Returns True if article should be REJECTED (waste of time for readers).
+    Runs AFTER scoring to catch edge cases.
+    """
+    llm = get_llm()
+    
+    prompt = f"""You are protecting readers of a ${1}/week newsletter for {target_category}.
+
+Question: Would a data scientist/ML engineer feel CHEATED if they saw this article in their paid newsletter?
+
+Examples of articles that WASTE readers' time (should be rejected):
+- "Taiwan military strategy" → Score 10/10 waste (completely off-topic)
+- "AWS outage drama" → Score 8/10 waste (tech gossip, not actionable)
+- "GLM coding subscription ad" → Score 7/10 waste (marketing fluff)
+- "How to learn Python in 2025" → Score 6/10 waste (beginner tutorial for experienced audience)
+
+Examples of valuable articles (should NOT be rejected):
+- "NumPy advanced functions" → Score 0/10 waste (directly useful)
+- "Snowflake new features" → Score 1/10 waste (tool update, relevant)
+- "Statistical methods for A/B testing" → Score 0/10 waste (practical knowledge)
+
+Article to evaluate:
+Title: {article['title']}
+Summary: {article.get('summary', '')[:400]}
+
+On a scale of 0-10, how much would readers feel this WASTES their time?
+Answer ONLY with a number 0-10 (nothing else):"""
+    
+    try:
+        response = llm.invoke(prompt)
+        score_text = (response.content if hasattr(response, 'content') else str(response)).strip()
+        waste_score = float(score_text.split()[0])  # Handle "8/10" or "8" format
+        
+        # Store for transparency
+        article['waste_score'] = waste_score
+        
+        # Reject if waste_score > 5
+        return waste_score > 5.0
+    except Exception as e:
+        print(f"Negative filter failed for '{article['title']}': {e}")
+        return False  # Fail open - don't reject on error (scoring already did its job)
 
 def categorize_article(article):
     """

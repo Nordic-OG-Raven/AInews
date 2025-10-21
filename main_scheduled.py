@@ -15,13 +15,16 @@ from src.agents import (
     send_email,
     send_to_linkedin,
     score_article_quality,
-    ensure_minimum_articles
+    ensure_minimum_articles,
+    relevance_gate_agent,
+    negative_filter_agent
 )
 from config import get_current_day_schedule, get_schedule_for_day, WEEKLY_SCHEDULE
 from tqdm import tqdm
 
 ARTICLES_PER_CATEGORY = 5  # Increased since we're focusing on one category per day
 MIN_ARTICLES_REQUIRED = 3  # Minimum articles required for a digest
+MIN_QUALITY_THRESHOLD = 6.0  # Minimum quality score (0-10) to publish article
 
 def load_cached_data():
     """Load cached test data for fast testing"""
@@ -116,45 +119,85 @@ def run_digest_for_day(day_name=None, test_mode=False):
         print(f"- {source}: {count} articles")
     print("--------------------------\n")
 
-    print(f"Fetched {len(all_articles)} potential articles. Categorizing...")
+    print(f"Fetched {len(all_articles)} potential articles.")
+    print("\n🤖 Starting Multi-Agent Filtering Pipeline...")
 
-    # 3. Categorize all articles using an LLM agent
+    # 3. STAGE 1: Categorization
+    print("  Stage 1: Categorizing articles...")
     categorized_articles = defaultdict(list)
-    for article in tqdm(all_articles, desc="Categorizing Articles"):
+    for article in tqdm(all_articles, desc="Categorizing"):
         category = categorize_article(article)
         if category == target_category:
             categorized_articles[category].append(article)
+    
+    print(f"  ✓ Categorization complete: {len(categorized_articles.get(target_category, []))} articles matched {target_category}")
 
-    # 4. Select top N articles from the target category
-    if not categorized_articles:
-        print(f"Not enough articles found for {target_category}. Found {len(categorized_articles.get(target_category, []))}, need at least {MIN_ARTICLES_REQUIRED}. Exiting.")
+    # 4. STAGE 2: Relevance Gate (strict binary filter)
+    print("  Stage 2: Relevance gate filtering...")
+    if target_category in categorized_articles:
+        relevant_articles = []
+        for article in tqdm(categorized_articles[target_category], desc="Relevance Check"):
+            if relevance_gate_agent(article, target_category):
+                relevant_articles.append(article)
+        categorized_articles[target_category] = relevant_articles
+        print(f"  ✓ Relevance gate passed: {len(relevant_articles)} articles")
+    
+    if not categorized_articles or len(categorized_articles.get(target_category, [])) == 0:
+        print(f"  ✗ No articles passed relevance gate. Exiting.")
         return
 
+    # 5. STAGE 3: Quality Scoring
+    print("  Stage 3: Quality scoring...")
     final_articles_to_summarize = []
     final_categorized_articles = {}
     
-    # Quality scoring and selection for target category
     if target_category in categorized_articles:
         target_articles = categorized_articles[target_category]
         
-        # Score articles by quality
         scored_articles = []
-        for article in target_articles:
+        for article in tqdm(target_articles, desc="Scoring"):
             score = score_article_quality(article, target_category)
             scored_articles.append((score, article))
         
-        # Sort by quality score (highest first), then by recency
-        scored_articles.sort(key=lambda x: (-x[0], x[1].get('published', '')), reverse=True)
+        print(f"  ✓ Quality scoring complete: {len(scored_articles)} articles scored")
         
-        # Take top articles
-        final_articles_to_summarize = [article for score, article in scored_articles[:ARTICLES_PER_CATEGORY]]
+        # 6. STAGE 4: Minimum Quality Threshold
+        print(f"  Stage 4: Applying minimum threshold ({MIN_QUALITY_THRESHOLD}/10)...")
+        high_quality_articles = [(score, article) for score, article in scored_articles if score >= MIN_QUALITY_THRESHOLD]
+        print(f"  ✓ Threshold filter: {len(high_quality_articles)} articles above {MIN_QUALITY_THRESHOLD}/10")
         
-        # Ensure minimum articles with fallback content
-        final_articles_to_summarize = ensure_minimum_articles(final_articles_to_summarize, target_category, MIN_ARTICLES_REQUIRED)
+        if len(high_quality_articles) == 0:
+            print(f"  ✗ No articles met quality threshold. Exiting.")
+            return
+        
+        # Sort by quality score (highest first)
+        high_quality_articles.sort(key=lambda x: (-x[0], x[1].get('published', '')), reverse=True)
+        
+        # 7. STAGE 5: Negative Filter (veto power)
+        print("  Stage 5: Negative filter (waste-of-time check)...")
+        approved_articles = []
+        for score, article in tqdm(high_quality_articles[:ARTICLES_PER_CATEGORY * 2], desc="Veto Check"):  # Check 2x articles in case some get vetoed
+            should_reject = negative_filter_agent(article, target_category)
+            if not should_reject:
+                approved_articles.append((score, article))
+            else:
+                print(f"    ✗ VETOED: '{article['title'][:60]}...' (waste_score: {article.get('waste_score', 'N/A')})")
+        
+        print(f"  ✓ Negative filter complete: {len(approved_articles)} articles approved")
+        
+        # Take top N articles that passed all filters
+        final_articles_to_summarize = [article for score, article in approved_articles[:ARTICLES_PER_CATEGORY]]
+        
+        # Check if we have minimum articles
+        if len(final_articles_to_summarize) < MIN_ARTICLES_REQUIRED:
+            print(f"  ⚠ Only {len(final_articles_to_summarize)} articles passed all filters (need {MIN_ARTICLES_REQUIRED}).")
+            print(f"  Using dynamic fallback content...")
+            final_articles_to_summarize = ensure_minimum_articles(final_articles_to_summarize, target_category, MIN_ARTICLES_REQUIRED)
         
         final_categorized_articles[target_category] = final_articles_to_summarize
 
-    print(f"\nFound {len(final_articles_to_summarize)} articles for {target_category}. Summarizing...")
+    print(f"\n✅ Pipeline complete: {len(final_articles_to_summarize)} articles ready for summarization")
+    print(f"   Average quality score: {sum(a.get('metrics', {}).get('final_score', 0) for a in final_articles_to_summarize) / len(final_articles_to_summarize):.1f}/10\n")
 
     # 5. Summarize the curated list of articles
     with tqdm(total=len(final_articles_to_summarize), desc="Summarizing Articles") as pbar:
@@ -205,6 +248,40 @@ def run_digest_for_day(day_name=None, test_mode=False):
     print("="*60)
     send_to_linkedin(final_categorized_articles, schedule)
 
+def format_article_metrics(article):
+    """
+    Format article metrics (date, citations, engagement) as HTML.
+    Only shows metrics that are actually available for the source.
+    """
+    metrics_html = '<ul class="metrics">'
+    
+    # Publication date (all sources)
+    if article.get('published'):
+        pub_date = article['published']
+        if isinstance(pub_date, str):
+            from dateutil import parser
+            try:
+                pub_date = parser.parse(pub_date)
+                metrics_html += f'<li>Published: {pub_date.strftime("%b %d, %Y")}</li>'
+            except:
+                metrics_html += f'<li>Published: {pub_date}</li>'
+        else:
+            metrics_html += f'<li>Published: {pub_date.strftime("%b %d, %Y")}</li>'
+    
+    # Citation count (arXiv only, via Semantic Scholar)
+    if article.get('metrics', {}).get('citations', 0) > 0:
+        metrics_html += f'<li>Citations: {article["metrics"]["citations"]}</li>'
+    
+    # Hacker News engagement metrics
+    if 'hacker news' in article.get('source', '').lower():
+        if article.get('score'):
+            metrics_html += f'<li>Upvotes: {article["score"]}</li>'
+        if article.get('num_comments'):
+            metrics_html += f'<li>Comments: {article["num_comments"]}</li>'
+    
+    metrics_html += '</ul>'
+    return metrics_html
+
 def format_themed_email(schedule, categorized_articles, joke, joke_article):
     """
     Formats the categorized articles and joke into a themed HTML email.
@@ -233,6 +310,9 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                 .joke-label {{ color: #f59e0b; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }}
                 .joke-text {{ color: #374151; font-size: 15px; line-height: 1.6; font-style: italic; }}
                 .source {{ color: #7f8c8d; font-size: 14px; font-style: italic; margin-bottom: 10px; }}
+                .metrics {{ color: #6b7280; font-size: 12px; margin: 10px 0; padding-left: 0; list-style-type: none; }}
+                .metrics li {{ display: inline; margin-right: 15px; }}
+                .metrics li:before {{ content: "• "; color: #667eea; font-weight: bold; }}
                 .section-intro {{ color: #6b7280; font-size: 15px; margin-bottom: 25px; font-style: italic; }}
                 .footer {{ background-color: #2c3e50; color: white; padding: 20px; text-align: center; font-size: 12px; }}
             </style>
@@ -271,6 +351,7 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                     <div class="article">
                         <h3><a href="{article['link']}" style="color: #2c3e50; text-decoration: none;">{article['title']}</a></h3>
                         <div class="source">Source: {article['source']}</div>
+                        {format_article_metrics(article)}
                         <div class="summary">{article['summary']}</div>
                     </div>
                 """
@@ -283,6 +364,7 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                     <div class="article">
                         <h3><a href="{article['link']}" style="color: #2c3e50; text-decoration: none;">{article['title']}</a></h3>
                         <div class="source">Source: {article['source']}</div>
+                        {format_article_metrics(article)}
                         <div class="summary">{article['summary']}</div>
                     </div>
                 """
@@ -302,6 +384,7 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article):
                     <div class="article">
                         <h3><a href="{article['link']}">{article['title']}</a></h3>
                         <p class="source">Source: {article['source']}</p>
+                        {format_article_metrics(article)}
                         <p>{article['summary']}</p>
                     </div>
                 """

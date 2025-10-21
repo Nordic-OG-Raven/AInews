@@ -43,28 +43,78 @@ Sources:
 - `fetch_all_articles()`: Unified RSS + HN fetching with timestamp filtering
 - Deduplication and source attribution
 
-#### 2.1.2 AI-Powered Categorization
-**Status**: Implemented
+#### 2.1.2 Multi-Agent Content Filtering System
+**Status**: Implemented (v3.0 - Three-Agent Architecture)
 
-Categories:
-1. **AI Research & Technical Deep Dives** (ML Monday focus)
-2. **AI Business & Industry News** (Wednesday focus)
-3. **AI Ethics, Policy & Society** (Friday focus)
-4. **Irrelevant** (filtered out)
+**Architecture Overview**:
+The system uses three specialized LLM agents working in sequence to ensure only high-quality, relevant content reaches readers:
 
-**Technical Implementation**:
-- LLM-based categorization using Groq Llama 3.1-8b-instant
-- Zero-cost operation
-- ~75 articles categorized per run
-- Accuracy optimized through prompt engineering
+1. **Agent 1: Relevance Gatekeeper** (Binary Filter)
+   - Role: Strict binary YES/NO relevance check
+   - Method: LLM with category-specific positive/negative examples
+   - Fail mode: Closed (reject on error)
+   - Purpose: Prevent off-topic articles from consuming scoring resources
 
-#### 2.1.3 Article Selection & Ranking
-**Status**: Implemented
+2. **Agent 2: Quality Scorer** (Multi-Dimensional Assessment)
+   - Role: Score articles on novelty, practical applicability, significance
+   - Method: LLM rates each dimension 0-10, weighted average
+   - Fail mode: Neutral (assign 5.0 on error)
+   - Purpose: Identify highest-value content for target audience
 
-Algorithm:
-- Sort by publication timestamp (most recent first)
-- Select top 5 articles per featured category
-- Configurable via `ARTICLES_PER_CATEGORY` constant
+3. **Agent 3: Negative Filter** (Veto Power)
+   - Role: Reject articles that waste readers' time
+   - Method: LLM rates "waste-of-time" factor 0-10
+   - Threshold: Reject if > 5.0
+   - Fail mode: Open (don't reject on error)
+   - Purpose: Final safety net against edge cases
+
+**5-Stage Filtering Pipeline**:
+1. **Categorization**: Hybrid (rule-based + LLM) assigns articles to categories
+2. **Relevance Gate**: Agent 1 filters out off-topic articles
+3. **Quality Scoring**: Agent 2 scores remaining articles on 3 dimensions
+4. **Threshold Filter**: Reject articles scoring < 6.0/10
+5. **Negative Filter**: Agent 3 vetoes articles with waste_score > 5.0
+
+**Performance Metrics** (Data Science Saturday test):
+- 120 articles fetched → 5 published (96% rejection rate)
+- Stage 1: 27 categorized → Stage 2: 21 passed relevance → Stage 3: 18 above 6.0/10 → Stage 4: 8 approved → Stage 5: 5 selected
+- Average final quality score: 6.1/10
+- Zero off-topic articles reached readers
+
+**Why Multi-Agent**:
+- **Separation of concerns**: Each agent has one job, does it well
+- **Fail-safe design**: Different fail modes prevent cascading errors
+- **Transparency**: Each stage logged for debugging
+- **Quality guarantee**: Articles pass 5 independent checks before publication
+
+**Cost**: ~$0.003 per article (3 LLM calls), still free with Groq
+
+#### 2.1.3 Quality Metrics & Transparency
+**Status**: Implemented (v3.0 - Multi-Agent Scores + Citations)
+
+**Metrics Displayed to Readers**:
+Each article shows:
+- **Publication date**: When the article was published
+- **Citation count**: For arXiv papers (via Semantic Scholar API)
+- **Novelty score** (0-10): New methods, breakthrough results
+- **Practical score** (0-10): Immediate applicability for readers
+- **Significance score** (0-10): Long-term industry impact
+- **Overall quality score** (0-10): Weighted average (40/30/30)
+
+**Quality Score Calculation**:
+```
+Final Score = 0.4 × Novelty + 0.3 × Practical + 0.3 × Significance
+```
+
+**Selection Criteria**:
+- **Minimum threshold**: 6.0/10 overall quality score
+- **Negative filter**: Articles with waste_score > 5.0 are vetoed
+- **Top N**: Best 5 articles per category after all filters
+
+**Transparency Benefits**:
+- Readers can verify why each article was selected
+- Builds trust in the curation process
+- Allows feedback loop for improving agent prompts
 
 #### 2.1.4 Professional Summarization
 **Status**: Implemented
@@ -142,16 +192,30 @@ Design Principles (Gestalt Theory Applied):
 - Sans-serif typography (Segoe UI)
 
 #### 2.3.2 Email Structure
-**Status**: Implemented
+**Status**: Implemented (v2.0 - Enhanced with Quality Metrics)
 
 Flow:
 1. **Header**: Theme name + description + date
 2. **Featured Category**: Main content section
 3. **Joke**: Contextual humor with article reference
-4. **Featured Articles**: 5 curated pieces
-5. **Transition**: "Also worth checking out from the past few days..."
-6. **Other Categories**: Additional relevant articles (if found)
-7. **Footer**: Branding
+4. **Tip Box**: Guidance to click article titles for full content
+5. **Featured Articles**: 5 curated pieces with quality metrics
+6. **Transition**: "Also worth checking out from the past few days..."
+7. **Other Categories**: Additional relevant articles (if found)
+8. **Footer**: Branding + collaboration email
+
+**Article Card Structure** (NEW):
+Each article now displays:
+- **Title**: Clickable link to original source
+- **Source**: Attribution (e.g., "arXiv • Author et al.", "TechCrunch AI")
+- **Quality Metrics** (inline bullet list):
+  - Publication date
+  - Citation count (if applicable)
+  - Novelty score (0-10)
+  - Practical applicability score (0-10)
+  - Significance score (0-10)
+  - **Overall quality score** (weighted average, bolded)
+- **Summary**: 4-6 sentence professional summary
 
 #### 2.3.3 Email Delivery
 **Status**: Implemented
