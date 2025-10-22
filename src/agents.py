@@ -520,6 +520,43 @@ IRRELEVANT Examples (say NO):
 - "EU passes AI regulation" → Policy
 - "Data warehouse comparison" → Data Science
 """
+    elif target_category == "AI Business & Industry News":
+        positive_examples = """
+RELEVANT Examples (say YES):
+- "OpenAI launches ChatGPT Atlas browser" → Product launch with market impact
+- "Anthropic raises $450M Series C at $18B valuation" → Funding/valuation news
+- "Meta releases Llama 3 for commercial use" → Product/business strategy
+- "Adobe launches AI Foundry for enterprise customers" → Enterprise product announcement
+- "Google announces AI pricing changes for Vertex" → Business model/pricing
+- "Microsoft acquires Inflection AI team" → M&A/talent acquisition
+- "AWS adds new AI chips to reduce inference costs" → Infrastructure/cost story
+"""
+        negative_examples = """
+IRRELEVANT Examples (say NO):
+- "DHS asks OpenAI to unmask user" → Legal/law enforcement, NOT business strategy
+- "How to build RAG with LangChain" → Technical tutorial, NOT business news
+- "New transformer architecture achieves SOTA" → Research/technical, NOT business
+- "EU passes AI Act with strict regulations" → Policy/regulation, NOT business moves
+- "Amazon Ring partners with police surveillance" → Ethics/privacy, NOT business
+- "Google Vertex demo: automating car servicing" → Technical implementation, NOT business
+- "Train neural nets 10x faster with this trick" → Technical optimization, NOT business
+"""
+    elif target_category == "AI Ethics, Policy & Society":
+        positive_examples = """
+RELEVANT Examples (say YES):
+- "DHS asks OpenAI to unmask user behind prompts" → Law enforcement and privacy
+- "EU finalizes AI Act enforcement guidelines" → Regulation and policy
+- "Amazon Ring partners with police surveillance network" → Surveillance and civil liberties
+- "Study finds bias in facial recognition for minorities" → Fairness and discrimination
+- "California passes AI safety bill despite industry pushback" → Policy and lobbying
+"""
+        negative_examples = """
+IRRELEVANT Examples (say NO):
+- "OpenAI launches new ChatGPT browser" → Business product launch
+- "How to fine-tune Llama 3 for your use case" → Technical tutorial
+- "Anthropic raises $450M Series C" → Business funding
+- "New SQL features in PostgreSQL 16" → Data science tools
+"""
     else:
         positive_examples = ""
         negative_examples = ""
@@ -687,10 +724,29 @@ Write the summary NOW - no preamble, no meta-commentary, just the summary."""),
 def generate_joke(article):
     """
     Generates a joke based on the article's title and summary.
+    Filters out inappropriate topics that shouldn't be joked about.
     """
+    # Safety check: Don't make jokes about serious/disturbing topics
+    title = article['title'].lower()
+    summary = article.get('summary', '').lower()
+    
+    inappropriate_topics = [
+        'child', 'abuse', 'assault', 'murder', 'death', 'rape', 'violence',
+        'dhs', 'warrant', 'crime', 'criminal', 'police', 'arrest', 'lawsuit',
+        'victim', 'tragedy', 'disaster', 'surveillance', 'privacy breach',
+        'exploitation', 'trafficking', 'terrorism'
+    ]
+    
+    if any(topic in title or topic in summary for topic in inappropriate_topics):
+        # Generate a generic tech joke instead
+        return "Why do data scientists prefer dark mode? Because light attracts bugs!"
+    
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a witty comedian who tells jokes about technology and AI. Create a short, one-liner joke based on the following article."),
+        ("system", """You are a witty comedian who tells jokes about technology and AI. 
+Create a short, clever one-liner joke based on the following article.
+
+CRITICAL: Keep it light and professional. If the article is about a serious topic, make a gentle pun about the technology/concept, NOT the situation."""),
         ("human", "Article Title: {title}\nArticle Summary: {summary}")
     ])
     parser = StrOutputParser()
