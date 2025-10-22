@@ -724,13 +724,20 @@ Write the summary NOW - no preamble, no meta-commentary, just the summary."""),
 def generate_joke(article):
     """
     Generates a joke based on the article's title and summary.
+    Uses OpenAI specifically for higher quality joke generation.
     """
-    llm = get_llm()
+    # Use OpenAI for jokes (better quality than Groq for creative tasks)
+    if not os.getenv("OPENAI_API_KEY"):
+        # Fallback to generic LLM if OpenAI not available
+        llm = get_llm()
+    else:
+        llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0.9)  # Higher temp for creativity
+    
     prompt = ChatPromptTemplate.from_messages([
         ("system", """You are a witty comedian who tells jokes about technology and AI. 
 Create a short, clever one-liner joke based on the following article.
 
-Keep it light and professional. If the article is about a serious topic, make a gentle pun about the technology/concept, NOT the situation."""),
+Keep it light, professional, and punny. Make people smile, not groan."""),
         ("human", "Article Title: {title}\nArticle Summary: {summary}")
     ])
     parser = StrOutputParser()
