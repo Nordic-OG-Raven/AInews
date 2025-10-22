@@ -356,7 +356,7 @@ def format_themed_email(schedule, categorized_articles, joke, joke_article, refr
                     <div class="joke">
                         <div class="joke-label">💡 Joke of the Day</div>
                         <div class="joke-text">{joke}</div>
-                        <div style="margin-top: 12px; font-size: 13px; color: #9ca3af; font-style: normal;">(See "{joke_article_title}" below to get it)</div>
+                        <div style="margin-top: 12px; font-size: 13px; color: #9ca3af; font-style: normal;">(See "{joke_article_title}" below for context)</div>
                     </div>
         """
         

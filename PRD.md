@@ -136,7 +136,7 @@ Requirements:
 Features:
 - Generated from random article in featured category
 - Appears right after category header (contextual placement)
-- References specific article: "(See [article title] below to get it)"
+- References specific article: "(See [article title] below for context)"
 - Subtle design (light gray background, gold accent border)
 
 #### 2.1.6 Enhanced Source Attribution
@@ -681,7 +681,7 @@ Latest ML research, papers, and technical breakthroughs
 💡 Joke of the Day
 Why did Terra break up with its last model? 
 It just couldn't handle the emotional depth of their 3D relationship!
-(See "Terra: Explorable Native 3D World Model..." below to get it)
+(See "Terra: Explorable Native 3D World Model..." below for context)
 
 📰 AI Research & Technical Deep Dives
 
