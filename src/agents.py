@@ -915,6 +915,7 @@ def get_full_article_text(url):
     """
     Scrapes the full text of an article from its URL.
     Note: This will not work for arXiv PDF links. We will rely on the abstract.
+    Uses site-specific selectors to avoid scraping sidebar/related articles.
     """
     if "arxiv.org" in url:
         return None # Can't scrape PDFs, will use abstract summary
@@ -924,9 +925,35 @@ def get_full_article_text(url):
         response = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        paragraphs = soup.find_all('p')
-        full_text = ' '.join([p.get_text() for p in paragraphs])
-        return full_text
+        # Site-specific selectors to get ONLY main article content
+        article_content = None
+        
+        # TechCrunch: target main article content
+        if "techcrunch.com" in url:
+            article_content = soup.find('div', class_='article-content') or soup.find('article')
+        
+        # VentureBeat: target main article body
+        elif "venturebeat.com" in url:
+            article_content = soup.find('div', class_='article-content') or soup.find('article')
+        
+        # Generic fallback: look for <article> tag first
+        if not article_content:
+            article_content = soup.find('article')
+        
+        # Extract paragraphs from article content only (not entire page)
+        if article_content:
+            paragraphs = article_content.find_all('p')
+            full_text = ' '.join([p.get_text() for p in paragraphs])
+            
+            # Sanity check: if text is suspiciously short, fall back to RSS summary
+            if len(full_text) < 200:
+                return None
+            
+            return full_text
+        else:
+            # If no article container found, return None to use RSS summary
+            return None
+            
     except Exception as e:
         print(f"Error scraping {url}: {e}")
         return None
