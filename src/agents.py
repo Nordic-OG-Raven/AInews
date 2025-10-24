@@ -450,13 +450,18 @@ def pre_filter_article(article):
         'gig work', 'gig economy', 'uber driver', 'delivery driver',  # Gig work
         'python 3.14', 'gil removal', 'javascript', 'java', 'programming language', 'compiler', 'runtime',  # Programming languages
         'billionaire', 'tower', 'real estate', 'cracks', 'building',  # Real estate/general news
-        'blame', 'lawsuit', 'legal',  # Legal news
     ]
     if any(keyword in title for keyword in irrelevant_keywords):
         return "Irrelevant"
     
-    # Special case: AI bias studies are AI Ethics, not Data Science
-    if 'ai bias' in title or 'bias' in title and 'ai' in (title + summary):
+    # AI Ethics keywords - regulation, policy, privacy, safety, fairness
+    ethics_keywords = [
+        'regulation', 'policy', 'gdpr', 'privacy', 'surveillance', 
+        'ai act', 'eu ai', 'bias', 'fairness', 'ethics', 'safety',
+        'explainability', 'transparency', 'accountability', 'responsible ai',
+        'ai safety', 'alignment', 'misinformation', 'deepfake'
+    ]
+    if any(keyword in title for keyword in ethics_keywords):
         return "AI Ethics, Policy & Society"
     
     # Data Science Tools - BROADER keywords
@@ -642,14 +647,14 @@ def categorize_article(article):
 Title: {article['title']}
 Summary: {article['summary']}
 
-Options: AI Research & Technical Deep Dives, AI Business & Industry News, AI Ethics Policy & Society, Data Science & Analytics, Irrelevant
+Options: AI Research & Technical Deep Dives, AI Business & Industry News, AI Ethics, Policy & Society, Data Science & Analytics, Irrelevant
 
 Rules:
 - Data Science & Analytics = SQL tools, analytics platforms, BI tools, data visualization tools
 - Irrelevant = Programming language updates, general tech news
 - AI Research = Neural networks, algorithms, research papers
 - AI Business = Company news, funding, products
-- AI Ethics = Safety, regulation, policy
+- AI Ethics, Policy & Society = Safety, regulation, policy, fairness, privacy, societal impact
 
 Answer with just the category name:"""
     
