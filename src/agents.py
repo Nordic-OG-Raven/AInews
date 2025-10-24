@@ -461,11 +461,12 @@ def pre_filter_article(article):
         return "Irrelevant"
     
     # AI Ethics keywords - regulation, policy, privacy, safety, fairness
+    # NOTE: Use specific phrases to avoid false positives (e.g., "ai transparency" not "transparency")
     ethics_keywords = [
-        'regulation', 'policy', 'gdpr', 'privacy', 'surveillance', 
-        'ai act', 'eu ai', 'bias', 'fairness', 'ethics', 'safety',
-        'explainability', 'transparency', 'accountability', 'responsible ai',
-        'ai safety', 'alignment', 'misinformation', 'deepfake'
+        'regulation', 'ai policy', 'eu policy', 'gdpr', 'privacy', 'surveillance', 
+        'ai act', 'eu ai', 'bias', 'fairness', 'ethics', 'ai safety',
+        'explainability', 'ai transparency', 'model transparency', 'accountability', 'responsible ai',
+        'alignment', 'misinformation', 'deepfake', 'data privacy', 'algorithmic bias'
     ]
     if any(keyword in title for keyword in ethics_keywords):
         return "AI Ethics, Policy & Society"
