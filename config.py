@@ -15,7 +15,7 @@ WEEKLY_SCHEDULE = {
         "description": "AI startups, funding, products, and industry moves"
     },
     "friday": {
-        "name": "Ethics Friday",
+        "name": "AI Ethics Friday",
         "category": "AI Ethics, Policy & Society",
         "description": "AI safety, regulation, societal impact, and policy debates"
     },

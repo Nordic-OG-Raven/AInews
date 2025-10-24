@@ -214,10 +214,17 @@ def run_digest_for_day(day_name=None, test_mode=False):
         for category, articles in final_categorized_articles.items():
             for article in articles:
                 content_to_summarize = article['summary']
-                if "arxiv" not in article['link']:
+                
+                # Only scrape for non-arXiv and non-HackerNews articles
+                # HN articles link to external sites with unreliable scraping
+                if "arxiv" not in article['link'] and article['source'] != "Hacker News":
                     full_text = get_full_article_text(article['link'])
                     if full_text:
                         content_to_summarize = full_text
+                
+                # For HN articles, use title as summary if summary is empty
+                if article['source'] == "Hacker News" and not content_to_summarize.strip():
+                    content_to_summarize = article['title']
                 
                 article['summary'] = summarize_article(content_to_summarize)
                 pbar.update(1)

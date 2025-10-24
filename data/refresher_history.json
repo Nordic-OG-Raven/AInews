@@ -18,5 +18,13 @@
       "Term Sheet Basics": "2025-10-22",
       "Minimum Viable Product (MVP)": "2025-10-22"
     }
+  },
+  "ai_ethics": {
+    "recent": [
+      "Causality vs Correlation"
+    ],
+    "last_shown": {
+      "Causality vs Correlation": "2025-10-24"
+    }
   }
 }
