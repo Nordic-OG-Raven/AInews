@@ -486,8 +486,12 @@ def pre_filter_article(article):
     if any(keyword in title for keyword in ai_research_keywords):
         return "AI Research & Technical Deep Dives"
     
-    # AI Business - companies, funding, products
-    ai_business_keywords = ['openai', 'chatgpt', 'funding', 'acquisition', 'startup', 'company', 'business']
+    # AI Business - companies, funding, products, financials
+    ai_business_keywords = [
+        'openai', 'chatgpt', 'funding', 'acquisition', 'startup', 'company', 'business',
+        'budget', 'roi', 'cost', 'financial', 'spending', 'investment', 'valuation', 'revenue',
+        'pricing', 'market', 'enterprise', 'sales'
+    ]
     if any(keyword in title for keyword in ai_business_keywords):
         return "AI Business & Industry News"
     
@@ -567,6 +571,10 @@ IRRELEVANT Examples (say NO):
 - "How to fine-tune Llama 3 for your use case" → Technical tutorial
 - "Anthropic raises $450M Series C" → Business funding
 - "New SQL features in PostgreSQL 16" → Data science tools
+- "AI's financial blind spot: cost transparency" → Business strategy/financial management
+- "68% of tech leaders plan to increase AI budgets" → Budget/ROI/financial planning
+- "Measuring ROI for AI projects" → Business metrics, NOT ethics/policy
+- "Total cost of ownership for AI infrastructure" → Financial analysis, NOT societal impact
 """
     else:
         positive_examples = ""
