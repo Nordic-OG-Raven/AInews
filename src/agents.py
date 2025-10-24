@@ -349,73 +349,79 @@ def generate_dynamic_fallback(target_category, needed_count):
     """
     Generate dynamic fallback content that varies each time.
     Uses date-based rotation and LLM generation for variety.
+    Supports ALL categories for consistency.
     """
+    day_of_year = datetime.now().timetuple().tm_yday
+    rotation_index = day_of_year % 7  # 7 different sets
+    
+    # Define fallback sets for each category
     if target_category == "Data Science & Analytics":
-        # Date-based rotation for variety
-        day_of_year = datetime.now().timetuple().tm_yday
-        rotation_index = day_of_year % 7  # 7 different sets
-        
         fallback_sets = [
-            # Set 0: SQL Focus
-            [
-                "Advanced SQL Window Functions for Data Analysis",
-                "SQL Performance Optimization: Indexing Strategies", 
-                "Building Complex Queries with CTEs and Subqueries"
-            ],
-            # Set 1: Python Focus
-            [
-                "Pandas vs Polars: Performance Comparison 2025",
-                "Data Visualization with Plotly and Streamlit",
-                "Machine Learning Pipeline with Scikit-learn"
-            ],
-            # Set 2: Analytics Focus
-            [
-                "A/B Testing Statistical Significance in Data Science",
-                "Time Series Analysis with Python and R",
-                "Customer Segmentation Using Clustering Algorithms"
-            ],
-            # Set 3: Tools Focus
-            [
-                "Snowflake vs BigQuery: Data Warehouse Comparison",
-                "Tableau vs Power BI: Which Should You Choose?",
-                "Jupyter Notebook Best Practices for Data Teams"
-            ],
-            # Set 4: Career Focus
-            [
-                "Data Science Interview Questions and Answers",
-                "Building a Data Science Portfolio: Project Ideas",
-                "Transitioning from Analyst to Data Scientist"
-            ],
-            # Set 5: Industry Focus
-            [
-                "Data Science in Healthcare: Real-World Applications",
-                "Financial Data Analysis: Risk Modeling Techniques",
-                "E-commerce Analytics: Customer Behavior Insights"
-            ],
-            # Set 6: Technical Focus
-            [
-                "Docker for Data Science: Containerizing ML Models",
-                "Apache Airflow: Orchestrating Data Pipelines",
-                "Data Quality: Validation and Monitoring Strategies"
-            ]
+            ["Advanced SQL Window Functions for Data Analysis", "SQL Performance Optimization: Indexing Strategies", "Building Complex Queries with CTEs and Subqueries"],
+            ["Pandas vs Polars: Performance Comparison 2025", "Data Visualization with Plotly and Streamlit", "Machine Learning Pipeline with Scikit-learn"],
+            ["A/B Testing Statistical Significance in Data Science", "Time Series Analysis with Python and R", "Customer Segmentation Using Clustering Algorithms"],
+            ["Snowflake vs BigQuery: Data Warehouse Comparison", "Tableau vs Power BI: Which Should You Choose?", "Jupyter Notebook Best Practices for Data Teams"],
+            ["Data Science Interview Questions and Answers", "Building a Data Science Portfolio: Project Ideas", "Transitioning from Analyst to Data Scientist"],
+            ["Data Science in Healthcare: Real-World Applications", "Financial Data Analysis: Risk Modeling Techniques", "E-commerce Analytics: Customer Behavior Insights"],
+            ["Docker for Data Science: Containerizing ML Models", "Apache Airflow: Orchestrating Data Pipelines", "Data Quality: Validation and Monitoring Strategies"]
         ]
+        source = "KDnuggets"
         
-        # Select topics for this rotation
-        selected_topics = fallback_sets[rotation_index][:needed_count]
+    elif target_category == "AI Research & Technical Deep Dives":
+        fallback_sets = [
+            ["Understanding Transformer Architecture: Attention Mechanisms", "BERT vs GPT: Comparing Language Model Approaches", "Training Stable Diffusion Models: Best Practices"],
+            ["Optimization Techniques for Large Language Models", "Fine-Tuning Strategies for Domain-Specific Tasks", "Efficient Training with Mixed Precision"],
+            ["Multi-Modal Learning: Combining Vision and Language", "Reinforcement Learning from Human Feedback (RLHF)", "Neural Architecture Search: Automated Design"],
+            ["Evaluation Metrics for Generative AI Models", "Prompt Engineering: Techniques and Patterns", "Model Compression and Quantization Methods"],
+            ["Transfer Learning Best Practices for Computer Vision", "Graph Neural Networks: Applications and Architectures", "Self-Supervised Learning Approaches"],
+            ["Explainability in Deep Learning: SHAP and LIME", "Adversarial Robustness in Neural Networks", "Continual Learning: Avoiding Catastrophic Forgetting"],
+            ["Attention Mechanisms Beyond Transformers", "Diffusion Models: Theory and Practice", "Neural Scaling Laws: When Does Size Matter?"]
+        ]
+        source = "arXiv"
         
-        # Generate dynamic content for each topic
-        fallback_articles = []
-        for i, topic in enumerate(selected_topics):
-            # Add some randomness to avoid identical content
-            random_offset = (day_of_year + i * 13) % 30  # Pseudo-random offset
-            
-            fallback_articles.append({
-                "title": topic,
-                "link": f"https://www.kdnuggets.com/fallback-{rotation_index}-{i}-{random_offset}",
-                "source": "KDnuggets",
-                "summary": f"Comprehensive guide covering {topic.lower()}. This essential resource provides practical insights, code examples, and best practices for data science professionals looking to enhance their skills in this critical area.",
-                "published": (datetime.now(timezone.utc) - timedelta(days=random_offset)).isoformat()
-            })
+    elif target_category == "AI Business & Industry News":
+        fallback_sets = [
+            ["AI ROI Measurement: Tracking Value Creation", "Building an AI-First Product Strategy", "AI Vendor Evaluation Framework"],
+            ["AI Cost Management: Controlling Inference Expenses", "Building vs Buying AI Capabilities", "AI Team Structure: Roles and Responsibilities"],
+            ["AI Product-Market Fit: Validation Strategies", "AI Go-to-Market Strategy for Enterprise", "Pricing AI Products: Usage vs Subscription"],
+            ["AI Due Diligence for Investors", "AI Competitive Analysis Framework", "AI Business Model Innovation"],
+            ["AI Customer Acquisition: Marketing AI Products", "AI Sales Enablement: Demos and Pilots", "AI Customer Success: Adoption Metrics"],
+            ["AI Regulatory Compliance: GDPR and Beyond", "AI Risk Management for Enterprises", "AI Vendor Lock-in: Mitigation Strategies"],
+            ["AI Talent Acquisition and Retention", "AI Infrastructure Investment Decisions", "AI Partnership Strategy: Ecosystem Building"]
+        ]
+        source = "AI | VentureBeat"
+        
+    elif target_category == "AI Ethics, Policy & Society":
+        fallback_sets = [
+            ["AI Fairness Metrics: Beyond Demographic Parity", "Algorithmic Bias Detection and Mitigation", "AI Transparency Requirements by Jurisdiction"],
+            ["GDPR Compliance for AI Systems", "AI Act Implementation Timeline and Impact", "Privacy-Preserving Machine Learning Techniques"],
+            ["AI Safety Standards: Emerging Frameworks", "AI Governance Models for Organizations", "AI Explainability: Legal Requirements"],
+            ["AI Impact Assessments: Best Practices", "AI and Human Rights: Key Considerations", "AI Accountability: Who's Responsible?"],
+            ["Facial Recognition Regulation: Global Overview", "AI Content Moderation: Ethical Challenges", "AI in Criminal Justice: Fairness Concerns"],
+            ["AI Environmental Impact: Carbon Footprint", "AI Labor Displacement: Policy Responses", "AI Misinformation: Detection and Prevention"],
+            ["AI Alignment: Technical and Ethical Perspectives", "AI Red Teaming: Security and Safety", "AI Incident Response: Lessons Learned"]
+        ]
+        source = "AI News & Artificial Intelligence | TechCrunch"
+        
+    else:
+        return []  # No fallback for unknown categories
+    
+    # Select topics for this rotation
+    selected_topics = fallback_sets[rotation_index][:needed_count]
+    
+    # Generate dynamic content for each topic
+    fallback_articles = []
+    for i, topic in enumerate(selected_topics):
+        # Add some randomness to avoid identical content
+        random_offset = (day_of_year + i * 13) % 30  # Pseudo-random offset
+        
+        fallback_articles.append({
+            "title": topic,
+            "link": f"https://fallback-content.example.com/{rotation_index}-{i}-{random_offset}",
+            "source": source,
+            "summary": f"Comprehensive guide covering {topic.lower()}. This essential resource provides practical insights and best practices for professionals looking to deepen their understanding of this critical topic.",
+            "published": (datetime.now(timezone.utc) - timedelta(days=random_offset)).isoformat()
+        })
     
     return fallback_articles
 
