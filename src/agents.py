@@ -102,22 +102,101 @@ def fetch_arxiv_papers():
         print(f"Error fetching from arXiv directly: {e}")
     return articles
 
+def fetch_arxiv_stats_papers():
+    """Fetch statistics and data science papers from arXiv"""
+    articles = []
+    yesterday_utc = datetime.now(timezone.utc) - timedelta(days=7)
+    
+    try:
+        # Statistics and data science categories
+        query = "cat:stat.ML OR cat:stat.ME OR cat:stat.AP OR cat:stat.CO"
+        url = f"http://export.arxiv.org/api/query?search_query={query}&sortBy=submittedDate&sortOrder=descending&max_results=30"
+        response = requests.get(url)
+        root = ET.fromstring(response.content)
+        
+        for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
+            published_str = entry.find('{http://www.w3.org/2005/Atom}published').text
+            published_time = datetime.fromisoformat(published_str.replace('Z', '+00:00'))
+            
+            if published_time > yesterday_utc:
+                primary_category = entry.find('{http://www.w3.org/2005/Atom}primary_category')
+                category_name = "arXiv: Statistics"
+                if primary_category is not None:
+                    term = primary_category.get('term', '')
+                    category_map = {
+                        'stat.ML': 'arXiv: Machine Learning (Statistics)',
+                        'stat.ME': 'arXiv: Methodology (Statistics)',
+                        'stat.AP': 'arXiv: Applications (Statistics)',
+                        'stat.CO': 'arXiv: Computation (Statistics)',
+                    }
+                    category_name = category_map.get(term, f"arXiv: {term}")
+                
+                authors = entry.findall('{http://www.w3.org/2005/Atom}author')
+                if authors:
+                    author_name = authors[0].find('{http://www.w3.org/2005/Atom}name')
+                    if author_name is not None:
+                        first_author = author_name.text.strip()
+                        name_parts = first_author.split()
+                        if len(name_parts) > 1:
+                            first_author = name_parts[-1] + " et al."
+                        category_name = f"{category_name} • {first_author}"
+                
+                articles.append({
+                    "source": category_name,
+                    "title": entry.find('{http://www.w3.org/2005/Atom}title').text.strip(),
+                    "link": entry.find('{http://www.w3.org/2005/Atom}id').text.strip(),
+                    "summary": entry.find('{http://www.w3.org/2005/Atom}summary').text.strip().replace('\n', ' '),
+                    "published": published_time.isoformat()
+                })
+        print(f"Found {len(articles)} statistics papers from arXiv.")
+    except Exception as e:
+        print(f"Error fetching stats from arXiv: {e}")
+    return articles
+
 def fetch_data_science_sources():
     """Fetch only data science RSS feeds and relevant Hacker News"""
     articles = []
     
+    # Add arXiv statistics papers
+    articles.extend(fetch_arxiv_stats_papers())
+    
     # Data Science RSS feeds only
     data_science_feeds = [
+        # General Data Science
         "https://www.kdnuggets.com/feed",
         "https://towardsdatascience.com/feed",
         "https://www.datacamp.com/blog/rss.xml",
         "https://www.analyticsvidhya.com/feed/",
         "https://www.dataquest.io/blog/feed/",
+        
+        # Statistics & R
+        "https://www.r-bloggers.com/feed/",
+        "https://simplystatistics.org/index.xml",
+        
+        # Python Data Science
+        "https://realpython.com/atom.xml",
+        
+        # SQL & Databases
+        "https://www.postgresql.org/news.rss",
+        "https://blog.getdbt.com/rss.xml",
+        "https://mode.com/blog/rss.xml",
+        
+        # Data Visualization
+        "https://observablehq.com/@observablehq/rss",
+        
+        # Data Engineering
+        "https://airbyte.com/blog/rss.xml",
+        "https://www.fivetran.com/blog/rss.xml",
+        
+        # Cloud Data Platforms
         "https://blog.snowflake.com/rss.xml",
         "https://cloud.google.com/blog/products/data-analytics/rss.xml",
         "https://aws.amazon.com/blogs/big-data/feed/",
+        
+        # BI & Analytics
         "https://www.tableau.com/blog/rss.xml",
-        "https://blog.powerbi.microsoft.com/rss.xml"
+        "https://blog.powerbi.microsoft.com/rss.xml",
+        "https://www.looker.com/blog/rss.xml"
     ]
     
     for feed_url in data_science_feeds:
