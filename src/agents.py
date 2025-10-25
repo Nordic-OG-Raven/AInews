@@ -508,26 +508,34 @@ def relevance_gate_agent(article, target_category):
     # Category-specific examples for strict filtering
     if target_category == "Data Science & Analytics":
         positive_examples = """
+SATURDAY = Data Scientists asking "What does the data say?" (analysis, reporting)
+Daily tools: SQL, Excel, Tableau, Power BI, Pandas, scipy.stats
+
 RELEVANT Examples (say YES):
-- "SQL window functions tutorial" → Database query techniques
-- "Hypothesis testing in Python with scipy.stats" → Statistical methods
-- "Tableau dashboard best practices" → Data visualization
-- "A/B testing: sample size calculation" → Experimental design
-- "Pandas groupby advanced techniques" → Data manipulation
-- "dbt for data transformation" → ETL/data engineering
-- "Regression analysis assumptions" → Statistical modeling
-- "Power BI vs Tableau comparison" → BI tools
+- "SQL window functions tutorial" → Data analysis technique
+- "Web scraping with Beautiful Soup" → Data collection method
+- "Hypothesis testing with scipy.stats" → Statistical inference
+- "Tableau dashboard design" → Data visualization/reporting
+- "A/B testing sample size calculation" → Experimental design for analysis
+- "Pandas groupby and aggregation" → Data transformation
+- "Building ETL pipelines with Airflow" → Data engineering
+- "Time series analysis with ARIMA" → Statistical forecasting
+- "Creating KPIs in Power BI" → Business metrics
 """
         negative_examples = """
+MONDAY = ML Engineers asking "What will happen next?" (predictive modeling)
+Daily tools: PyTorch, TensorFlow, sklearn, XGBoost, Transformers
+
 IRRELEVANT Examples (say NO):
-- "Scaling Recommender Transformers to 1B parameters" → ML/AI (that's Monday, not Saturday)
-- "LLMs as SQL Copilots" → AI/LLMs (that's Monday, not Saturday)
-- "Fine-tuning BERT for NLP tasks" → Deep learning (that's Monday)
-- "AWS announces SageMaker new features" → Product marketing, not educational
-- "Amazon EMR launches access control" → Cloud product announcement, not tutorial
-- "Neural networks for time series" → ML/AI (Monday content)
-- "Taiwan military strategy" → Completely off-topic
-- "Python 3.14 removes GIL" → Programming language, not data science
+- "Scaling Recommender Transformers" → Building ML models (Monday)
+- "LLMs as SQL Copilots" → AI/deep learning (Monday)
+- "Feature engineering for XGBoost" → ML model building (Monday)
+- "Fine-tuning BERT for NLP" → Deep learning (Monday)
+- "Training neural networks faster" → ML optimization (Monday)
+- "Time series forecasting with LSTMs" → Deep learning (Monday, not Saturday's ARIMA)
+- "Customer segmentation with KMeans" → Predictive modeling (Monday, unless purely for reporting)
+- "AWS announces SageMaker" → Product marketing (neither day)
+- "Taiwan military strategy" → Off-topic (neither day)
 """
     elif target_category == "AI Research & Technical Deep Dives":
         positive_examples = """
@@ -587,10 +595,26 @@ IRRELEVANT Examples (say NO):
         positive_examples = ""
         negative_examples = ""
     
+    # Add category-specific guidance
+    category_guidance = ""
+    if target_category == "Data Science & Analytics":
+        category_guidance = """
+CORE PRINCIPLE: Saturday is for Data Scientists asking "What does the data say?"
+- Focus: Analysis, reporting, visualization, statistical inference
+- NOT for: Predictive modeling, training ML models, deep learning
+"""
+    elif target_category == "AI Research & Technical Deep Dives":
+        category_guidance = """
+CORE PRINCIPLE: Monday is for ML Engineers asking "What will happen next?"
+- Focus: Building/training models, novel architectures, research papers
+- NOT for: Pure data analysis, BI reporting, business metrics
+"""
+    
     prompt = f"""You are a strict gatekeeper for a newsletter category: {target_category}.
 
 Your ONLY job: Answer YES or NO. Is this article relevant to {target_category}?
 
+{category_guidance}
 {positive_examples}
 {negative_examples}
 
@@ -616,23 +640,39 @@ def negative_filter_agent(article, target_category):
     """
     llm = get_llm()
     
+    # Add category-specific context
+    audience_context = ""
+    if target_category == "Data Science & Analytics":
+        audience_context = """
+TARGET AUDIENCE: Data Scientists (not ML Engineers)
+They ask: "What does the data say?" (analysis, not prediction)
+Daily work: SQL queries, dashboards, reports, statistical analysis
+"""
+    elif target_category == "AI Research & Technical Deep Dives":
+        audience_context = """
+TARGET AUDIENCE: ML Engineers (not Data Analysts)
+They ask: "What will happen next?" (prediction, not just analysis)
+Daily work: Training models, reading papers, implementing algorithms
+"""
+    
     prompt = f"""You are protecting readers of a ${1}/week newsletter for {target_category}.
-
-Question: Would a data scientist/ML engineer feel CHEATED if they saw this article in their paid newsletter?
+{audience_context}
+Question: Would readers feel CHEATED if they saw this article in their paid newsletter?
 
 Examples of articles that WASTE readers' time (should be rejected):
 - "Taiwan military strategy" → Score 10/10 waste (completely off-topic)
-- "AWS announces SageMaker integration with Lake Formation" → Score 8/10 waste (product marketing, no tutorial)
-- "Amazon EMR launches fine-grained access control" → Score 8/10 waste (cloud vendor press release)
+- "AWS announces SageMaker integration" → Score 8/10 waste (product marketing)
+- "Amazon EMR launches access control" → Score 8/10 waste (cloud vendor press release)
 - "GLM coding subscription ad" → Score 7/10 waste (marketing fluff)
 - "How to learn Python in 2025" → Score 6/10 waste (beginner tutorial for experienced audience)
-- "Scaling Recommender Transformers to 1B parameters" → Score 7/10 waste for Data Science Saturday (this is ML/AI, not traditional data science)
+- "Scaling Recommender Transformers" → Score 7/10 waste for Data Science Saturday (ML/AI is Monday)
+- "Feature engineering for XGBoost" → Score 7/10 waste for Data Science Saturday (ML models are Monday)
 
 Examples of valuable articles (should NOT be rejected):
-- "NumPy advanced functions" → Score 0/10 waste (directly useful)
-- "Hypothesis testing with scipy.stats" → Score 0/10 waste (statistical methods)
 - "SQL window functions explained" → Score 0/10 waste (database techniques)
-- "Statistical methods for A/B testing" → Score 0/10 waste (practical knowledge)
+- "Hypothesis testing with scipy.stats" → Score 0/10 waste (statistical methods)
+- "Web scraping with Beautiful Soup" → Score 0/10 waste (data collection)
+- "Building dashboards in Tableau" → Score 0/10 waste (data visualization)
 
 Article to evaluate:
 Title: {article['title']}
