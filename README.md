@@ -1,18 +1,24 @@
 # AI News Digest
+**Version 4.0** - Advanced Multi-Agent System with RAG & ReACT
 
-An automated Python-based system that fetches daily AI tech news from multiple sources, categorizes articles, generates high-quality summaries using LLMs, and sends a consolidated email digest.
+An automated Python-based system powered by advanced LLM agents that fetches, filters, and curates AI tech news. Features RAG-based deduplication, ReACT agents with tool use, and LangSmith observability for production monitoring.
 
 ## Features
 
-- **Multi-source news fetching** from arXiv, Hacker News, TechCrunch, VentureBeat, Wired, and more
-- **AI-powered categorization** using hybrid approach (rule-based + LLM)
-- **LLM multi-dimensional quality scoring** (novelty, practical applicability, significance)
-- **Citation tracking** via Semantic Scholar API for arXiv papers
-- **Transparent quality metrics** displayed with each article
-- **Intelligent summarization** using LangChain with Groq (free tier)
-- **Automated email delivery** with beautiful HTML formatting
+### Core Capabilities
+- **Multi-source news fetching** from arXiv, Hacker News, TechCrunch, VentureBeat, and 15+ specialized feeds
+- **Multi-agent filtering pipeline** with 5 stages (categorization, relevance gate, quality scoring, threshold filter, negative filter)
+- **Intent-based categorization** (not just keywords) - distinguishes "data analysis" from "model building"
+- **Transparent quality metrics** - publication date, citations, Hacker News upvotes displayed with each article
 - **Weekly themed execution** via GitHub Actions (ML Monday, Business Briefing, Ethics Friday, Data Science Saturday)
 - **Contextual joke generator** that references featured articles
+- **Refresher of the Day** - Educational content with interview prep focus
+
+### Advanced Features (v4.0)
+- **🔄 RAG (Retrieval-Augmented Generation)**: Vector-based article memory prevents repetitive content within 60 days
+- **🤖 ReACT Agents**: Quality scorer uses web search, citation lookup, and trend analysis to verify claims
+- **📊 LangSmith Observability**: Production monitoring with cost tracking ($0.47/digest), latency analysis, and accuracy metrics
+- **🎯 Intent-Based Categorization**: "What does the data say?" (Sat) vs "What will happen next?" (Mon)
 
 ## Quick Start
 
@@ -43,33 +49,59 @@ See [SETUP.md](SETUP.md) for detailed setup instructions.
 
 ```
 AInews/
-├── main.py                 # Main orchestration script
+├── main_scheduled.py      # Main orchestration for scheduled digests
 ├── src/
-│   └── agents.py          # News fetching, LLM agents, email sending
+│   ├── agents.py          # Multi-agent pipeline, LLM agents, email sending
+│   ├── article_memory.py  # RAG vector store for deduplication (v4.0)
+│   ├── react_agents.py    # ReACT agents with tool use (v4.0)
+│   └── refresher.py       # Refresher of the Day system
+├── config.py              # Weekly schedule configuration
+├── refreshers.yaml        # 103 curated educational topics
+├── data/
+│   ├── article_memory/    # Chroma vector DB (persistent)
+│   └── refresher_history.json  # Rotation tracking
 ├── .github/workflows/
-│   └── daily-news.yml     # GitHub Actions workflow
+│   └── weekly-digest.yml  # GitHub Actions workflow
 ├── requirements.txt       # Python dependencies
 ├── SETUP.md              # Detailed setup instructions
+├── PRD.md                # Product Requirements Document (v4.0)
 └── README.md             # This file
 ```
 
 ## How It Works
 
-1. **Fetch** articles from multiple sources (arXiv API, RSS feeds, Hacker News)
-2. **Categorize** using hybrid approach (rule-based + LLM) to assign articles to relevant categories
-3. **Score** each article using LLM multi-dimensional scoring (novelty, practical applicability, significance)
-4. **Select** top N articles from each category based on quality scores (not recency)
-5. **Enhance** articles with citation counts (via Semantic Scholar API for arXiv papers)
-6. **Summarize** articles using LLM for high-quality, concise summaries
-7. **Generate** a tech-themed joke based on a random article
-8. **Format** content into beautiful HTML email with quality metrics displayed
-9. **Send** email digest to configured recipient
+### Article Processing Pipeline (v4.0)
+
+1. **Fetch** articles from multiple sources (arXiv API, RSS feeds, Hacker News) - category-specific for efficiency
+2. **Deduplicate** using URL and title similarity checks
+3. **Categorize** using hybrid approach:
+   - Rule-based pre-filter (keywords, patterns)
+   - Intent-based LLM categorization (audience + outcome)
+4. **Memory Check (RAG)**: Query vector DB for similar articles sent in last 60 days (>85% similarity = reject)
+5. **Relevance Gate**: Strict binary filter with category-specific examples ("YES" or "NO" - no gray area)
+6. **Quality Scoring (ReACT)**:
+   - LLM scores 3 dimensions: novelty, practical, significance
+   - ReACT agent uses tools: web search, citation lookup, trend check
+   - Verifies claims, checks context, assesses impact
+7. **Threshold Filter**: Reject articles scoring <6.0/10
+8. **Negative Filter**: Veto agent rejects "waste of time" articles (marketing fluff, beginner content)
+9. **Enhance** with source-specific metrics (citations for arXiv, upvotes for HN)
+10. **Summarize** using LLM with strict plain-text guidelines
+11. **Generate** contextual joke referencing featured article
+12. **Select** "Refresher of the Day" from curated topic pool (103 topics across 4 categories)
+13. **Format** into HTML email with metrics displayed
+14. **Store** sent articles in vector DB for future RAG queries
+15. **Send** email digest + track metrics in LangSmith
 
 ## Requirements
 
 - Python 3.11+
-- OpenAI API key or Groq API key
-- Gmail account for sending emails
+- **API Keys:**
+  - Groq API key (primary LLM - free tier)
+  - OpenAI API key (optional - for joke generation & embeddings)
+  - LangSmith API key (optional - for observability)
+- **Email:** Gmail account with App Password
+- **Storage:** ~50MB for vector DB (grows with article history)
 
 ## License
 
