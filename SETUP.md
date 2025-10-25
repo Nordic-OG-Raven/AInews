@@ -27,6 +27,11 @@
    EMAIL_RECIPIENT=recipient_email@gmail.com
    GMAIL_APP_PASSWORD=your_gmail_app_password_here
    
+   # LangSmith Configuration (optional - for observability v4.0)
+   LANGCHAIN_TRACING_V2=true
+   LANGCHAIN_PROJECT=AInews-Production
+   LANGCHAIN_API_KEY=your_langsmith_api_key_here
+   
    # LinkedIn Configuration (optional - for automated posting)
    LINKEDIN_ACCESS_TOKEN=your_linkedin_access_token
    LINKEDIN_ORGANIZATION_ID=urn:li:organization:your_org_id
@@ -57,9 +62,12 @@
    - Settings > Secrets and variables > Actions
    - Add the following repository secrets:
      - `GROQ_API_KEY` (required - free API)
+     - `OPENAI_API_KEY` (optional - for embeddings and joke generation)
      - `EMAIL_SENDER` (your Gmail address)
      - `EMAIL_RECIPIENT` (recipient email)
      - `GMAIL_APP_PASSWORD` (16-character app password)
+     - `LANGCHAIN_TRACING_V2` (optional - set to `true` for LangSmith)
+     - `LANGCHAIN_API_KEY` (optional - for observability)
      - `LINKEDIN_ACCESS_TOKEN` (optional - for LinkedIn posting)
      - `LINKEDIN_ORGANIZATION_ID` (optional - for company page posting)
 
