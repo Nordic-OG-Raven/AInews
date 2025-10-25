@@ -21,6 +21,8 @@ from src.agents import (
     get_llm
 )
 from src.refresher import get_refresher_for_category, generate_refresher_explanation, format_refresher_html
+from src.article_memory import get_article_memory  # v4.0: RAG deduplication
+from src.react_agents import score_article_with_react  # v4.0: ReACT agents
 from config import get_current_day_schedule, get_schedule_for_day, WEEKLY_SCHEDULE
 from tqdm import tqdm
 
@@ -142,6 +144,25 @@ def run_digest_for_day(day_name=None, test_mode=False):
     
     print(f"  ✓ Categorization complete: {len(categorized_articles.get(target_category, []))} articles matched {target_category}")
 
+    # 3.5. STAGE 1.5: RAG Memory Check (v4.0 - deduplication)
+    print("  Stage 1.5: RAG memory check (deduplication)...")
+    memory = get_article_memory()
+    if memory.collection:  # Only if RAG is enabled
+        deduplicated_articles = []
+        duplicates_found = 0
+        for article in categorized_articles.get(target_category, []):
+            is_dup, reason = memory.check_if_duplicate(article)
+            if not is_dup:
+                deduplicated_articles.append(article)
+            else:
+                duplicates_found += 1
+                print(f"  → Rejected duplicate: {article['title'][:60]}... ({reason})")
+        
+        categorized_articles[target_category] = deduplicated_articles
+        print(f"  ✓ RAG deduplication: {duplicates_found} duplicates removed, {len(deduplicated_articles)} articles remain")
+    else:
+        print("  ⚠️  RAG disabled (no OpenAI API key)")
+
     # 4. STAGE 2: Relevance Gate (strict binary filter)
     print("  Stage 2: Relevance gate filtering...")
     if target_category in categorized_articles:
@@ -156,20 +177,36 @@ def run_digest_for_day(day_name=None, test_mode=False):
         print(f"  ✗ No articles passed relevance gate. Exiting.")
         return
 
-    # 5. STAGE 3: Quality Scoring
-    print("  Stage 3: Quality scoring...")
+    # 5. STAGE 3: Quality Scoring (v4.0 - with ReACT)
+    print("  Stage 3: Quality scoring (ReACT + LLM)...")
     final_articles_to_summarize = []
     final_categorized_articles = {}
     
     if target_category in categorized_articles:
         target_articles = categorized_articles[target_category]
         
+        llm = get_llm()
         scored_articles = []
+        react_enabled = os.getenv("OPENAI_API_KEY") and os.getenv("USE_REACT_SCORING", "false").lower() == "true"
+        
         for article in tqdm(target_articles, desc="Scoring"):
-            score = score_article_quality(article, target_category)
+            # Try ReACT scoring first (if enabled), fallback to regular scoring
+            if react_enabled:
+                try:
+                    score, reasoning = score_article_with_react(article, target_category, llm)
+                    article['react_reasoning'] = reasoning
+                except Exception as e:
+                    print(f"  ⚠️  ReACT failed for '{article['title'][:40]}...', using fallback: {e}")
+                    score = score_article_quality(article, target_category)
+            else:
+                score = score_article_quality(article, target_category)
+            
             scored_articles.append((score, article))
         
-        print(f"  ✓ Quality scoring complete: {len(scored_articles)} articles scored")
+        if react_enabled:
+            print(f"  ✓ Quality scoring complete (ReACT): {len(scored_articles)} articles scored")
+        else:
+            print(f"  ✓ Quality scoring complete (LLM): {len(scored_articles)} articles scored")
         
         # 6. STAGE 4: Minimum Quality Threshold
         print(f"  Stage 4: Applying minimum threshold ({MIN_QUALITY_THRESHOLD}/10)...")
@@ -269,6 +306,14 @@ def run_digest_for_day(day_name=None, test_mode=False):
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(html_content)
     print(f"✅ Email sent and saved to {output_file}")
+    
+    # 10.5. Store sent articles in RAG memory (v4.0)
+    if memory.collection:
+        for category, articles in final_categorized_articles.items():
+            for article in articles:
+                quality_score = article.get('metrics', {}).get('quality_score', 5.0)
+                memory.store_article(article, category, quality_score)
+        print(f"  ✓ Stored {sum(len(articles) for articles in final_categorized_articles.values())} articles in RAG memory")
     
     # 11. Post to LinkedIn
     print("\n" + "="*60)

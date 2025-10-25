@@ -1,12 +1,14 @@
 {
   "data_science": {
     "recent": [
+      "SQL Windows",
       "Bayes Theorem",
       "Cross-Validation"
     ],
     "last_shown": {
       "Cross-Validation": "2025-10-21",
-      "Bayes Theorem": "2025-10-25"
+      "Bayes Theorem": "2025-10-25",
+      "SQL Windows": "2025-10-26"
     }
   },
   "ai_business": {
