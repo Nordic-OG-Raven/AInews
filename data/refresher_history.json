@@ -1,10 +1,12 @@
 {
   "data_science": {
     "recent": [
+      "Bayes Theorem",
       "Cross-Validation"
     ],
     "last_shown": {
-      "Cross-Validation": "2025-10-21"
+      "Cross-Validation": "2025-10-21",
+      "Bayes Theorem": "2025-10-25"
     }
   },
   "ai_business": {
@@ -21,10 +23,12 @@
   },
   "ai_ethics": {
     "recent": [
-      "Causality vs Correlation"
+      "Causality vs Correlation",
+      "Data Governance"
     ],
     "last_shown": {
-      "Causality vs Correlation": "2025-10-24"
+      "Causality vs Correlation": "2025-10-24",
+      "Data Governance": "2025-10-24"
     }
   }
 }

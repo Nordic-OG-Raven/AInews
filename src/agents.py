@@ -509,19 +509,25 @@ def relevance_gate_agent(article, target_category):
     if target_category == "Data Science & Analytics":
         positive_examples = """
 RELEVANT Examples (say YES):
-- "New SQL window functions in PostgreSQL 15"
-- "Tableau 2025 adds real-time collaboration features"
-- "A/B testing best practices for data teams"
-- "Pandas vs Polars: Performance comparison"
-- "Building ETL pipelines with Apache Airflow"
+- "SQL window functions tutorial" → Database query techniques
+- "Hypothesis testing in Python with scipy.stats" → Statistical methods
+- "Tableau dashboard best practices" → Data visualization
+- "A/B testing: sample size calculation" → Experimental design
+- "Pandas groupby advanced techniques" → Data manipulation
+- "dbt for data transformation" → ETL/data engineering
+- "Regression analysis assumptions" → Statistical modeling
+- "Power BI vs Tableau comparison" → BI tools
 """
         negative_examples = """
 IRRELEVANT Examples (say NO):
-- "Taiwan should build a space-enabled kill web" → Military strategy, NOT data science
-- "AWS brain drain sends service down" → Tech industry drama, NOT data science tools
-- "Python 3.14 removes GIL" → Programming language, NOT data science
-- "Uber drivers protest gig work conditions" → Labor/policy, NOT data science
-- "OpenAI raises $10B in funding" → Business news, NOT data science
+- "Scaling Recommender Transformers to 1B parameters" → ML/AI (that's Monday, not Saturday)
+- "LLMs as SQL Copilots" → AI/LLMs (that's Monday, not Saturday)
+- "Fine-tuning BERT for NLP tasks" → Deep learning (that's Monday)
+- "AWS announces SageMaker new features" → Product marketing, not educational
+- "Amazon EMR launches access control" → Cloud product announcement, not tutorial
+- "Neural networks for time series" → ML/AI (Monday content)
+- "Taiwan military strategy" → Completely off-topic
+- "Python 3.14 removes GIL" → Programming language, not data science
 """
     elif target_category == "AI Research & Technical Deep Dives":
         positive_examples = """
@@ -616,13 +622,16 @@ Question: Would a data scientist/ML engineer feel CHEATED if they saw this artic
 
 Examples of articles that WASTE readers' time (should be rejected):
 - "Taiwan military strategy" → Score 10/10 waste (completely off-topic)
-- "AWS outage drama" → Score 8/10 waste (tech gossip, not actionable)
+- "AWS announces SageMaker integration with Lake Formation" → Score 8/10 waste (product marketing, no tutorial)
+- "Amazon EMR launches fine-grained access control" → Score 8/10 waste (cloud vendor press release)
 - "GLM coding subscription ad" → Score 7/10 waste (marketing fluff)
 - "How to learn Python in 2025" → Score 6/10 waste (beginner tutorial for experienced audience)
+- "Scaling Recommender Transformers to 1B parameters" → Score 7/10 waste for Data Science Saturday (this is ML/AI, not traditional data science)
 
 Examples of valuable articles (should NOT be rejected):
 - "NumPy advanced functions" → Score 0/10 waste (directly useful)
-- "Snowflake new features" → Score 1/10 waste (tool update, relevant)
+- "Hypothesis testing with scipy.stats" → Score 0/10 waste (statistical methods)
+- "SQL window functions explained" → Score 0/10 waste (database techniques)
 - "Statistical methods for A/B testing" → Score 0/10 waste (practical knowledge)
 
 Article to evaluate:
