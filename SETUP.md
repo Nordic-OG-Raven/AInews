@@ -32,6 +32,10 @@
    LANGCHAIN_PROJECT=AInews-Production
    LANGCHAIN_API_KEY=your_langsmith_api_key_here
    
+   # v4.0 Features (ReACT is enabled by default when OPENAI_API_KEY is set)
+   # Set USE_REACT_SCORING=false to disable ReACT agents (uses faster LLM scoring)
+   # USE_REACT_SCORING=true
+   
    # LinkedIn Configuration (optional - for automated posting)
    LINKEDIN_ACCESS_TOKEN=your_linkedin_access_token
    LINKEDIN_ORGANIZATION_ID=urn:li:organization:your_org_id

@@ -187,7 +187,8 @@ def run_digest_for_day(day_name=None, test_mode=False):
         
         llm = get_llm()
         scored_articles = []
-        react_enabled = os.getenv("OPENAI_API_KEY") and os.getenv("USE_REACT_SCORING", "false").lower() == "true"
+        # v4.0: ReACT is enabled by default when OPENAI_API_KEY is set
+        react_enabled = os.getenv("OPENAI_API_KEY") and os.getenv("USE_REACT_SCORING", "true").lower() == "true"
         
         for article in tqdm(target_articles, desc="Scoring"):
             # Try ReACT scoring first (if enabled), fallback to regular scoring
