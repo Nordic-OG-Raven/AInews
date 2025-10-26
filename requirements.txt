@@ -13,4 +13,4 @@ python-dateutil
 # v4.0 Advanced Features
 chromadb>=0.4.0
 langsmith>=0.1.0
-duckduckgo-search>=3.9.0
+ddgs>=1.0.0

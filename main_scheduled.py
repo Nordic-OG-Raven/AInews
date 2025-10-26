@@ -297,8 +297,14 @@ def run_digest_for_day(day_name=None, test_mode=False):
         
         print(f"  ✓ Negative filter complete: {len(approved_articles)} articles approved")
         
-        # Take top N articles that passed all filters
-        final_articles_to_summarize = [article for score, article in approved_articles[:ARTICLES_PER_CATEGORY]]
+        # Take top N articles that passed all filters (preserve quality scores)
+        final_articles_to_summarize = []
+        for score, article in approved_articles[:ARTICLES_PER_CATEGORY]:
+            # Store final score in article metadata
+            if 'metrics' not in article:
+                article['metrics'] = {}
+            article['metrics']['final_score'] = score
+            final_articles_to_summarize.append(article)
         
         # Check if we have minimum articles
         if len(final_articles_to_summarize) < MIN_ARTICLES_REQUIRED:

@@ -21,7 +21,7 @@ def web_search(query: str) -> str:
         Top search results with snippets
     """
     try:
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
         
         with DDGS() as ddgs:
             results = list(ddgs.text(query, max_results=3))
@@ -80,7 +80,7 @@ def trend_check(topic: str) -> str:
         Trend status with mention count
     """
     try:
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
         
         recent_query = f"{topic} latest news 2025"
         

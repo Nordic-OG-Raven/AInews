@@ -157,8 +157,8 @@ def fetch_data_science_sources():
     """Fetch only data science RSS feeds and relevant Hacker News"""
     articles = []
     
-    # Add arXiv statistics papers
-    articles.extend(fetch_arxiv_stats_papers())
+    # DISABLED: arXiv statistics papers had 0% conversion rate (too academic/theoretical)
+    # articles.extend(fetch_arxiv_stats_papers())
     
     # Data Science RSS feeds only
     data_science_feeds = [

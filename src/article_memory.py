@@ -69,9 +69,9 @@ class ArticleMemory:
         # Create query text
         query_text = f"{article['title']} {article.get('summary', '')}"
         
-        # Calculate cutoff date
+        # Calculate cutoff date (as Unix timestamp)
         cutoff_date = datetime.now() - timedelta(days=LOOKBACK_DAYS)
-        cutoff_timestamp = cutoff_date.isoformat()
+        cutoff_timestamp = cutoff_date.timestamp()
         
         try:
             # Query for similar articles in last LOOKBACK_DAYS
@@ -92,7 +92,8 @@ class ArticleMemory:
                     
                     if similarity > SIMILARITY_THRESHOLD:
                         matched_metadata = results['metadatas'][0][i]
-                        days_ago = (datetime.now() - datetime.fromisoformat(matched_metadata['sent_date'])).days
+                        sent_timestamp = matched_metadata['sent_date']
+                        days_ago = int((datetime.now().timestamp() - sent_timestamp) / 86400)
                         
                         reason = (
                             f"Too similar ({similarity:.1%}) to '{matched_metadata['title']}' "
@@ -122,13 +123,13 @@ class ArticleMemory:
             # Create document text
             doc_text = f"{article['title']} {article.get('summary', '')}"
             
-            # Create metadata
+            # Create metadata (store sent_date as Unix timestamp for ChromaDB queries)
             metadata = {
                 'title': article['title'],
                 'url': article.get('link', ''),
                 'category': category,
                 'quality_score': quality_score,
-                'sent_date': datetime.now().isoformat(),
+                'sent_date': datetime.now().timestamp(),
                 'source': article.get('source', 'Unknown')
             }
             
@@ -160,7 +161,7 @@ class ArticleMemory:
             return {}
         
         cutoff_date = datetime.now() - timedelta(days=days)
-        cutoff_timestamp = cutoff_date.isoformat()
+        cutoff_timestamp = cutoff_date.timestamp()
         
         try:
             # Get all articles in category from last N days
