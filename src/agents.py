@@ -832,15 +832,19 @@ def summarize_article(article_content):
 Write a 4-6 sentence summary that makes them think "I need to read this full article!"
 
 RULES:
-- Start with the most compelling finding or announcement
-- Include specific technical details (tools, methods, numbers)
+- Start with the most compelling finding, number, or announcement
+- Extract and EXPLAIN specific technical details:
+  * If article lists tools/functions → explain what each does
+  * If article shows methods → describe how they work
+  * If article has benchmarks → include the numbers and what they measure
 - End with concrete impact ("This means..." or "Impact:")
 - Write in PLAIN TEXT - absolutely NO markdown, bullets, or special formatting
 - Never say "Here's a rewritten summary" or reference yourself
 - Active voice only, strong verbs, zero fluff
 
-Good: "Google released a new Python API for Data Commons that unifies 250M datasets."
+Good: "Google released a new Python API for Data Commons that unifies 250M datasets, including those from the US Census Bureau and the National Institutes of Health, allowing users to query and combine data with simple SQL-like queries."
 Bad: "The article discusses how Google has introduced an API..."
+Bad: "You can master 7 powerful NumPy functions..." (what ARE they? what do they DO?)
 
 Write the summary NOW - no preamble, no meta-commentary, just the summary."""),
         ("human", "{article}")

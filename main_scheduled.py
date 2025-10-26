@@ -38,6 +38,70 @@ CATEGORY_TO_REFRESHER = {
     "Data Science & Analytics": "data_science"
 }
 
+def track_source_performance(all_articles, categorized, passed_relevance, passed_quality, passed_veto, final, target_category):
+    """
+    Track source performance through the filtering pipeline.
+    Returns analytics dict showing conversion rates by source.
+    """
+    from collections import defaultdict
+    
+    source_stats = defaultdict(lambda: {
+        'fetched': 0,
+        'categorized': 0,
+        'passed_relevance': 0,
+        'passed_quality': 0,
+        'passed_veto': 0,
+        'final': 0
+    })
+    
+    # Track fetched
+    for article in all_articles:
+        source = article.get('source', 'Unknown')
+        source_stats[source]['fetched'] += 1
+    
+    # Track categorized
+    for article in categorized.get(target_category, []):
+        source = article.get('source', 'Unknown')
+        source_stats[source]['categorized'] += 1
+    
+    # Track passed relevance
+    for article in passed_relevance:
+        source = article.get('source', 'Unknown')
+        source_stats[source]['passed_relevance'] += 1
+    
+    # Track passed quality
+    for score, article in passed_quality:
+        source = article.get('source', 'Unknown')
+        source_stats[source]['passed_quality'] += 1
+    
+    # Track passed veto
+    for score, article in passed_veto:
+        source = article.get('source', 'Unknown')
+        source_stats[source]['passed_veto'] += 1
+    
+    # Track final
+    for article in final:
+        source = article.get('source', 'Unknown')
+        source_stats[source]['final'] += 1
+    
+    # Calculate conversion rates
+    source_analytics = []
+    for source, stats in source_stats.items():
+        if stats['fetched'] > 0:
+            source_analytics.append({
+                'source': source,
+                'fetched': stats['fetched'],
+                'categorized': stats['categorized'],
+                'final': stats['final'],
+                'cat_rate': f"{100 * stats['categorized'] / stats['fetched']:.1f}%",
+                'final_rate': f"{100 * stats['final'] / stats['fetched'] if stats['fetched'] > 0 else 0:.1f}%"
+            })
+    
+    # Sort by final count (most productive first)
+    source_analytics.sort(key=lambda x: x['final'], reverse=True)
+    
+    return source_analytics
+
 def load_cached_data():
     """Load cached test data for fast testing"""
     try:
@@ -246,6 +310,33 @@ def run_digest_for_day(day_name=None, test_mode=False):
 
     print(f"\n✅ Pipeline complete: {len(final_articles_to_summarize)} articles ready for summarization")
     print(f"   Average quality score: {sum(a.get('metrics', {}).get('final_score', 0) for a in final_articles_to_summarize) / len(final_articles_to_summarize):.1f}/10\n")
+
+    # Track source performance
+    print("\n📊 SOURCE ANALYTICS")
+    print("="*80)
+    source_analytics = track_source_performance(
+        all_articles=all_articles,
+        categorized=categorized_articles,
+        passed_relevance=relevant_articles if 'relevant_articles' in locals() else [],
+        passed_quality=high_quality_articles if 'high_quality_articles' in locals() else [],
+        passed_veto=approved_articles if 'approved_articles' in locals() else [],
+        final=final_articles_to_summarize,
+        target_category=target_category
+    )
+    
+    # Print top 10 sources by productivity
+    print(f"{'Source':<50} {'Fetched':<10} {'Categorized':<12} {'Final':<8} {'Conv %':<10}")
+    print("-"*80)
+    for stats in source_analytics[:15]:  # Top 15
+        print(f"{stats['source']:<50} {stats['fetched']:<10} {stats['categorized']:<12} {stats['final']:<8} {stats['final_rate']:<10}")
+    
+    # Save detailed analytics to file
+    analytics_dir = "outputs/source_analytics"
+    os.makedirs(analytics_dir, exist_ok=True)
+    analytics_file = f"{analytics_dir}/{day_name or 'today'}_{datetime.now().strftime('%Y-%m-%d')}.json"
+    with open(analytics_file, 'w') as f:
+        json.dump(source_analytics, f, indent=2)
+    print(f"\n✓ Detailed analytics saved to: {analytics_file}\n")
 
     # 5. Summarize the curated list of articles
     with tqdm(total=len(final_articles_to_summarize), desc="Summarizing Articles") as pbar:

@@ -1,18 +1,20 @@
 {
   "data_science": {
     "recent": [
+      "Cross-Validation",
+      "Logistic Regression",
       "Bayes Theorem",
       "SQL Windows",
-      "Linear Regression",
-      "Cross-Validation",
-      "EDA Principles"
+      "EDA Principles",
+      "Linear Regression"
     ],
     "last_shown": {
       "Cross-Validation": "2025-10-21",
       "Bayes Theorem": "2025-10-25",
       "SQL Windows": "2025-10-26",
       "EDA Principles": "2025-10-26",
-      "Linear Regression": "2025-10-26"
+      "Linear Regression": "2025-10-26",
+      "Logistic Regression": "2025-10-26"
     }
   },
   "ai_business": {
