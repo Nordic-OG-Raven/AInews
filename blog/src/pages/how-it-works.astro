@@ -1,0 +1,229 @@
+---
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How It Works - AI News Blog</title>
+  <meta name="description" content="Learn about the Multi-Agent System that curates AI news digests">
+  <link rel="stylesheet" href="/src/styles/global.css">
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="mb-6">
+      <a href="/" class="text-blue-600 hover:text-blue-800">&larr; Back to Home</a>
+    </div>
+
+    <header class="mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">How It Works</h1>
+      <p class="text-xl text-gray-600">The AI-Powered Multi-Agent System Behind Your News Digests</p>
+    </header>
+
+    <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
+      <p class="text-gray-700 mb-4">
+        AI News Blog uses a sophisticated <strong>Multi-Agent System (MAS)</strong> powered by large language models 
+        to automatically curate high-quality AI news. Three specialized AI agents work together to ensure only the 
+        most relevant and valuable content reaches your inbox.
+      </p>
+    </div>
+
+    <!-- Workflow Diagram -->
+    <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">5-Stage Filtering Pipeline</h2>
+      
+      <div class="space-y-6">
+        <!-- Stage 1: Data Collection -->
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">
+            1
+          </div>
+          <div class="flex-1">
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">📡 Multi-Source Aggregation</h3>
+            <p class="text-gray-700 mb-2">Fetch articles from:</p>
+            <ul class="list-disc list-inside text-gray-600 space-y-1">
+              <li><strong>arXiv</strong>: Latest research papers (CS.AI, CS.LG, CS.CL)</li>
+              <li><strong>RSS Feeds</strong>: TechCrunch, VentureBeat, MIT Tech Review, Google Research</li>
+              <li><strong>Hacker News</strong>: Top AI-related discussions</li>
+            </ul>
+            <p class="text-gray-500 text-sm mt-2">Fetches ~120-150 articles per day</p>
+          </div>
+        </div>
+
+        <!-- Stage 2: Categorization -->
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
+            2
+          </div>
+          <div class="flex-1">
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">🏷️ Smart Categorization</h3>
+            <p class="text-gray-700 mb-2">Hybrid system (rule-based + LLM) assigns articles to categories:</p>
+            <ul class="list-disc list-inside text-gray-600 space-y-1">
+              <li><strong>ML Monday</strong>: Machine learning research & applications</li>
+              <li><strong>Tech Tuesday</strong>: Industry news & product launches</li>
+              <li><strong>Web Wednesday</strong>: Web development & frameworks</li>
+              <li><strong>Thought Thursday</strong>: AI ethics & societal impact</li>
+              <li><strong>Fun Friday</strong>: Creative AI applications & humor</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Stage 3: Agent 1 - Relevance Gate -->
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center font-bold">
+            3
+          </div>
+          <div class="flex-1">
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">🚪 Agent 1: Relevance Gatekeeper</h3>
+            <p class="text-gray-700 mb-2">
+              <strong>Binary filter</strong> - Strict YES/NO relevance check using category-specific examples.
+            </p>
+            <div class="bg-gray-50 p-4 rounded-lg mt-2">
+              <p class="font-medium text-gray-900 mb-2">Example prompt for ML Monday:</p>
+              <p class="text-gray-700 text-sm italic">
+                "Is this article relevant to machine learning researchers/developers? 
+                YES if: new models, training techniques, benchmarks, applications. 
+                NO if: general tech news, unrelated AI hype, business only."
+              </p>
+            </div>
+            <p class="text-gray-500 text-sm mt-2">Fail mode: <strong>Closed</strong> (reject on error)</p>
+            <p class="text-gray-500 text-sm">Typical rejection rate: ~80%</p>
+          </div>
+        </div>
+
+        <!-- Stage 4: Agent 2 - Quality Scorer -->
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-12 h-12 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold">
+            4
+          </div>
+          <div class="flex-1">
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">⭐ Agent 2: Quality Scorer</h3>
+            <p class="text-gray-700 mb-2">
+              <strong>Multi-dimensional assessment</strong> - Rates articles on 3 criteria (0-10 each):
+            </p>
+            <ul class="list-disc list-inside text-gray-600 space-y-1">
+              <li><strong>Novelty</strong>: New methods, breakthrough results, fresh perspectives</li>
+              <li><strong>Practical Applicability</strong>: Can developers/researchers use this?</li>
+              <li><strong>Significance</strong>: Impact on field, industry relevance</li>
+            </ul>
+            <p class="text-gray-700 mt-2">
+              Weighted average calculated. Articles below <strong>6.0/10</strong> are rejected.
+            </p>
+            <p class="text-gray-500 text-sm mt-2">Fail mode: <strong>Neutral</strong> (assign 5.0 on error)</p>
+          </div>
+        </div>
+
+        <!-- Stage 5: Agent 3 - Negative Filter -->
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">
+            5
+          </div>
+          <div class="flex-1">
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">🚫 Agent 3: Negative Filter (Veto Power)</h3>
+            <p class="text-gray-700 mb-2">
+              <strong>Final safety net</strong> - Rejects articles that waste readers' time:
+            </p>
+            <ul class="list-disc list-inside text-gray-600 space-y-1">
+              <li>Vague announcements without substance</li>
+              <li>Pure marketing hype</li>
+              <li>Redundant content (already covered)</li>
+              <li>Clickbait or misleading titles</li>
+            </ul>
+            <p class="text-gray-700 mt-2">
+              Rates "waste-of-time" factor 0-10. Articles above <strong>5.0</strong> are vetoed.
+            </p>
+            <p class="text-gray-500 text-sm mt-2">Fail mode: <strong>Open</strong> (don't reject on error)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance Stats -->
+    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow-md p-8 mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">🎯 Performance Metrics</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-3xl font-bold text-blue-600">96%</p>
+          <p class="text-gray-700">Rejection Rate</p>
+          <p class="text-gray-500 text-sm">Only highest quality articles</p>
+        </div>
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-3xl font-bold text-green-600">6.1/10</p>
+          <p class="text-gray-700">Avg Quality Score</p>
+          <p class="text-gray-500 text-sm">Published articles</p>
+        </div>
+        <div class="bg-white rounded-lg p-4">
+          <p class="text-3xl font-bold text-purple-600">$0.003</p>
+          <p class="text-gray-700">Cost Per Article</p>
+          <p class="text-gray-500 text-sm">3 LLM calls (Groq free tier)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Why Multi-Agent -->
+    <div class="bg-white rounded-lg shadow-md p-8 mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">🤖 Why Multi-Agent Architecture?</h2>
+      <div class="space-y-4 text-gray-700">
+        <div class="flex gap-3">
+          <span class="text-green-600 font-bold">✓</span>
+          <div>
+            <strong>Separation of Concerns</strong> - Each agent has one job, does it well
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-green-600 font-bold">✓</span>
+          <div>
+            <strong>Fail-Safe Design</strong> - Different fail modes prevent cascading errors
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-green-600 font-bold">✓</span>
+          <div>
+            <strong>Transparency</strong> - Each stage logged for debugging and improvement
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <span class="text-green-600 font-bold">✓</span>
+          <div>
+            <strong>Quality Guarantee</strong> - 5 independent checks before publication
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tech Stack -->
+    <div class="bg-white rounded-lg shadow-md p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">🛠️ Technology Stack</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
+        <div>
+          <h3 class="font-semibold text-gray-900 mb-2">Backend (Python)</h3>
+          <ul class="list-disc list-inside space-y-1 text-sm">
+            <li>Groq API (Llama 3.1 70B)</li>
+            <li>LangSmith (observability)</li>
+            <li>Supabase (database)</li>
+            <li>GitHub Actions (automation)</li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900 mb-2">Frontend (Astro)</h3>
+          <ul class="list-disc list-inside space-y-1 text-sm">
+            <li>Astro (static site generator)</li>
+            <li>Tailwind CSS (styling)</li>
+            <li>Cloudflare Pages (hosting)</li>
+            <li>TypeScript</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 text-center">
+      <a href="/" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        See It In Action →
+      </a>
+    </div>
+  </div>
+</body>
+</html>
+

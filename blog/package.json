@@ -6,7 +6,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "scrape-linkedin": "tsx scripts/scrape-linkedin.ts",
+    "scrape-linkedin:dry-run": "tsx scripts/scrape-linkedin.ts --dry-run"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.10",
@@ -14,5 +16,9 @@
     "@tailwindcss/vite": "^4.1.16",
     "astro": "^5.15.2",
     "tailwindcss": "^4.1.16"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1",
+    "tsx": "^4.20.6"
   }
 }

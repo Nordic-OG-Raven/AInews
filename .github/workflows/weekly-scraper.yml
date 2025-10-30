@@ -1,0 +1,56 @@
+name: Weekly LinkedIn Scraper
+
+on:
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  scrape-and-notify:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: blog/package-lock.json
+      
+      - name: Install dependencies
+        run: |
+          cd blog
+          npm ci
+      
+      - name: Install Playwright browsers
+        run: |
+          cd blog
+          npx playwright install chromium
+          npx playwright install-deps
+      
+      - name: Run LinkedIn scraper
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          cd blog
+          npm run scrape-linkedin
+      
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 Weekly Scraper Failed',
+              body: `The LinkedIn scraper failed on ${new Date().toISOString()}\n\nPlease check the [workflow run](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.`,
+              labels: ['bug', 'automation']
+            });
+            console.log('Created issue:', issue.data.html_url);
+
