@@ -77,7 +77,7 @@ export async function hasUserReacted(
   digestId: string,
   ipAddress: string
 ): Promise<boolean> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data } = await supabase
     .from('reactions')

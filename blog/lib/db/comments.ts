@@ -17,7 +17,7 @@ async function hashEmail(email: string): Promise<string> {
  * Get all approved comments for a digest
  */
 export async function getCommentsByDigestId(digestId: string): Promise<Comment[]> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data, error } = await supabase
     .from('comments')
@@ -87,7 +87,7 @@ export async function createComment(data: {
  * Get comment count for a digest
  */
 export async function getCommentCount(digestId: string): Promise<number> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { count } = await supabase
     .from('comments')

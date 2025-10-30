@@ -51,7 +51,7 @@ export async function getPublishedDigests(
  * Get a single digest by ID
  */
 export async function getDigestById(id: string): Promise<Digest | null> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data, error } = await supabase
     .from('digests_with_counts')
@@ -86,7 +86,7 @@ async function incrementViewCount(digestId: string): Promise<void> {
  * Get recent digests (for sidebar/related)
  */
 export async function getRecentDigests(limit: number = 5): Promise<Digest[]> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data, error } = await supabase
     .from('digests_with_counts')
