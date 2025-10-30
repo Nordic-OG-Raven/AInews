@@ -253,8 +253,70 @@ const subscribersCount = subscribers?.filter(s => s.verified).length || 0;
         // Update content visibility
         tabContents.forEach(content => content.classList.add('hidden'));
         document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+
+        // Load analytics when tab is opened
+        if (tabName === 'analytics') {
+          loadAnalytics();
+        }
       });
     });
+
+    // Load analytics
+    async function loadAnalytics() {
+      const loadingEl = document.getElementById('analytics-loading');
+      const contentEl = document.getElementById('analytics-content');
+      
+      try {
+        const response = await fetch('/api/admin/analytics');
+        if (!response.ok) throw new Error('Failed to fetch analytics');
+        
+        const data = await response.json();
+        
+        // Update overview stats
+        document.getElementById('stat-digests').textContent = data.overview.totalDigests;
+        document.getElementById('stat-views').textContent = data.overview.totalViews.toLocaleString();
+        document.getElementById('stat-reactions').textContent = data.overview.totalReactions;
+        document.getElementById('stat-subscribers').textContent = data.overview.verifiedSubscribers;
+        
+        // Update reaction distribution
+        document.getElementById('stat-thumbs-up').textContent = data.reactions.thumbsUp;
+        document.getElementById('stat-middle-finger').textContent = data.reactions.middleFinger;
+        
+        // Update top by views
+        const topByViewsEl = document.getElementById('top-by-views');
+        topByViewsEl.innerHTML = data.topDigests.byViews.map(d => `
+          <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+            <a href="/digest/${d.id}" class="text-blue-600 hover:underline flex-1">${d.title}</a>
+            <span class="text-gray-600 text-sm ml-2">👁 ${d.view_count}</span>
+          </div>
+        `).join('');
+        
+        // Update top by reactions
+        const topByReactionsEl = document.getElementById('top-by-reactions');
+        topByReactionsEl.innerHTML = data.topDigests.byReactions.map(d => `
+          <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+            <a href="/digest/${d.id}" class="text-blue-600 hover:underline flex-1">${d.title}</a>
+            <span class="text-gray-600 text-sm ml-2">👍 ${d.thumbs_up || 0}</span>
+          </div>
+        `).join('');
+        
+        // Update category breakdown
+        const categoryBreakdownEl = document.getElementById('category-breakdown');
+        const categories = Object.entries(data.categoryBreakdown);
+        categoryBreakdownEl.innerHTML = categories.map(([cat, count]) => `
+          <div class="flex justify-between items-center p-2">
+            <span class="text-gray-900">${cat.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+            <span class="font-semibold text-gray-700">${count}</span>
+          </div>
+        `).join('');
+        
+        loadingEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+        loadingEl.innerHTML = '<p class="text-red-600">Failed to load analytics</p>';
+      }
+    }
 
     // Comment moderation
     async function approveComment(id) {
