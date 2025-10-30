@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+export const runtime = 'edge';
+
 async function checkAuth(): Promise<boolean> {
   const cookieStore = await cookies();
   const adminToken = cookieStore.get('admin_session');

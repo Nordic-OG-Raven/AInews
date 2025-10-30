@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { AdminLoginForm } from '@/components/admin/AdminLoginForm';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 
+export const runtime = 'edge';
+
 async function checkAuth(): Promise<boolean> {
   const cookieStore = await cookies();
   const adminToken = cookieStore.get('admin_session');

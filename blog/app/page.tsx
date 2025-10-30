@@ -6,6 +6,8 @@ import { Search, Calendar, ThumbsUp, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { getPublishedDigests, getDigestStats } from "@/lib/db/digests";
 
+export const runtime = 'edge';
+
 const CATEGORY_COLORS = {
   ml_monday: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   business_wednesday: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",

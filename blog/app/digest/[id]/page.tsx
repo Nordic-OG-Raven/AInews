@@ -9,6 +9,8 @@ import { getDigestById } from '@/lib/db/digests';
 import { getCommentsByDigestId } from '@/lib/db/comments';
 import type { DigestCategory } from '@/lib/types';
 
+export const runtime = 'edge';
+
 const CATEGORY_COLORS: Record<DigestCategory, string> = {
   ml_monday: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
   business_wednesday: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
