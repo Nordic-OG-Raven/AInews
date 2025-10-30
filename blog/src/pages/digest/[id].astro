@@ -1,0 +1,124 @@
+---
+import { supabase } from '../../lib/supabase';
+import type { Digest, Article, Comment } from '../../lib/types';
+
+const { id } = Astro.params;
+
+const { data: digest } = await supabase
+  .from('digests_with_counts')
+  .select('*')
+  .eq('id', id)
+  .single();
+
+const { data: comments } = await supabase
+  .from('comments')
+  .select('*')
+  .eq('digest_id', id)
+  .eq('approved', true)
+  .order('created_at', { ascending: false });
+
+if (!digest) {
+  return Astro.redirect('/');
+}
+
+const CATEGORY_COLORS = {
+  ml_monday: 'bg-blue-100 text-blue-800',
+  tech_tuesday: 'bg-green-100 text-green-800',
+  web_wednesday: 'bg-purple-100 text-purple-800',
+  thought_thursday: 'bg-yellow-100 text-yellow-800',
+  fun_friday: 'bg-pink-100 text-pink-800',
+};
+
+const CATEGORY_NAMES = {
+  ml_monday: 'ML Monday',
+  tech_tuesday: 'Tech Tuesday',
+  web_wednesday: 'Web Wednesday',
+  thought_thursday: 'Thought Thursday',
+  fun_friday: 'Fun Friday',
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{digest.title} - AI News Blog</title>
+  <link rel="stylesheet" href="/src/styles/global.css">
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <a href="/" class="text-blue-600 hover:text-blue-800 mb-6 inline-block">&larr; Back to all digests</a>
+    
+    <article class="bg-white rounded-lg shadow-md p-8 mb-8">
+      <div class="flex items-center gap-4 mb-6">
+        <span class={`px-3 py-1 rounded-full text-sm font-medium ${CATEGORY_COLORS[digest.category]}`}>
+          {CATEGORY_NAMES[digest.category]}
+        </span>
+        <time class="text-gray-600">
+          {new Date(digest.published_date).toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}
+        </time>
+      </div>
+
+      <h1 class="text-4xl font-bold text-gray-900 mb-8">{digest.title}</h1>
+
+      <div class="space-y-8">
+        {digest.articles.map((article: Article, index: number) => (
+          <div class="border-l-4 border-blue-500 pl-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">
+              {index + 1}. <a href={article.url} target="_blank" rel="noopener noreferrer" class="hover:text-blue-600">
+                {article.title}
+              </a>
+            </h3>
+            <p class="text-gray-700 mb-2">{article.summary}</p>
+            <p class="text-sm text-gray-500">Source: {article.source}</p>
+          </div>
+        ))}
+      </div>
+
+      <div class="mt-8 pt-8 border-t border-gray-200">
+        <div class="flex items-center gap-6">
+          <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+            <span>👍</span>
+            <span>{digest.thumbs_up || 0}</span>
+          </button>
+          <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+            <span>🖕</span>
+            <span>{digest.middle_finger || 0}</span>
+          </button>
+          <span class="text-gray-600">💬 {digest.comment_count || 0} comments</span>
+          <span class="text-gray-600">👁 {digest.view_count || 0} views</span>
+        </div>
+      </div>
+    </article>
+
+    <div class="bg-white rounded-lg shadow-md p-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Comments</h2>
+      
+      {comments && comments.length > 0 ? (
+        <div class="space-y-6">
+          {comments.map((comment: Comment) => (
+            <div class="border-b border-gray-200 pb-6 last:border-b-0">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="font-semibold text-gray-900">{comment.author_name}</span>
+                <span class="text-gray-500 text-sm">
+                  {new Date(comment.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <p class="text-gray-700">{comment.content}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-600">No comments yet. Be the first to comment!</p>
+      )}
+    </div>
+  </div>
+</body>
+</html>
+

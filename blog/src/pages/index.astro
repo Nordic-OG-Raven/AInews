@@ -1,0 +1,80 @@
+---
+import { supabase } from '../lib/supabase';
+import type { Digest } from '../lib/types';
+
+const { data: digests } = await supabase
+  .from('digests_with_counts')
+  .select('*')
+  .eq('status', 'published')
+  .order('published_date', { ascending: false });
+
+const CATEGORY_COLORS = {
+  ml_monday: 'bg-blue-100 text-blue-800',
+  tech_tuesday: 'bg-green-100 text-green-800',
+  web_wednesday: 'bg-purple-100 text-purple-800',
+  thought_thursday: 'bg-yellow-100 text-yellow-800',
+  fun_friday: 'bg-pink-100 text-pink-800',
+};
+
+const CATEGORY_NAMES = {
+  ml_monday: 'ML Monday',
+  tech_tuesday: 'Tech Tuesday',
+  web_wednesday: 'Web Wednesday',
+  thought_thursday: 'Thought Thursday',
+  fun_friday: 'Fun Friday',
+};
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI News Blog - Weekly Tech & AI Digests</title>
+  <link rel="stylesheet" href="/src/styles/global.css">
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <header class="mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">AI News Blog</h1>
+      <p class="text-xl text-gray-600">Curated weekly digests of tech, AI, and web development news</p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {digests?.map((digest: Digest) => (
+        <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-3">
+              <span class={`px-3 py-1 rounded-full text-sm font-medium ${CATEGORY_COLORS[digest.category]}`}>
+                {CATEGORY_NAMES[digest.category]}
+              </span>
+              <time class="text-sm text-gray-500">
+                {new Date(digest.published_date).toLocaleDateString()}
+              </time>
+            </div>
+            
+            <h2 class="text-xl font-semibold text-gray-900 mb-3">
+              <a href={`/digest/${digest.id}`} class="hover:text-blue-600">
+                {digest.title}
+              </a>
+            </h2>
+
+            <div class="flex items-center gap-4 text-sm text-gray-600">
+              <span>👍 {digest.thumbs_up || 0}</span>
+              <span>🖕 {digest.middle_finger || 0}</span>
+              <span>💬 {digest.comment_count || 0}</span>
+              <span>👁 {digest.view_count || 0}</span>
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+
+    {!digests || digests.length === 0 && (
+      <div class="text-center py-12">
+        <p class="text-gray-600 text-lg">No digests published yet. Check back soon!</p>
+      </div>
+    )}
+  </div>
+</body>
+</html>
