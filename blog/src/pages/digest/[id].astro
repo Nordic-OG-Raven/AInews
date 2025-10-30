@@ -83,40 +83,210 @@ const CATEGORY_NAMES = {
 
       <div class="mt-8 pt-8 border-t border-gray-200">
         <div class="flex items-center gap-6">
-          <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+          <button id="thumbs-up-btn" class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <span>👍</span>
-            <span>{digest.thumbs_up || 0}</span>
+            <span id="thumbs-up-count">{digest.thumbs_up || 0}</span>
           </button>
-          <button class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+          <button id="middle-finger-btn" class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <span>🖕</span>
-            <span>{digest.middle_finger || 0}</span>
+            <span id="middle-finger-count">{digest.middle_finger || 0}</span>
           </button>
           <span class="text-gray-600">💬 {digest.comment_count || 0} comments</span>
           <span class="text-gray-600">👁 {digest.view_count || 0} views</span>
         </div>
       </div>
+      
+      <script define:vars={{ digestId: digest.id }}>
+        const thumbsUpBtn = document.getElementById('thumbs-up-btn');
+        const middleFingerBtn = document.getElementById('middle-finger-btn');
+        const thumbsUpCount = document.getElementById('thumbs-up-count');
+        const middleFingerCount = document.getElementById('middle-finger-count');
+
+        async function addReaction(type) {
+          try {
+            const response = await fetch(`/api/reactions/${digestId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reactionType: type })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              thumbsUpCount.textContent = data.thumbsUp;
+              middleFingerCount.textContent = data.middleFinger;
+              thumbsUpBtn.disabled = true;
+              middleFingerBtn.disabled = true;
+              localStorage.setItem(`reacted_${digestId}`, 'true');
+            } else if (response.status === 409) {
+              alert('You have already reacted to this digest');
+              thumbsUpBtn.disabled = true;
+              middleFingerBtn.disabled = true;
+            } else {
+              alert('Error: ' + data.error);
+            }
+          } catch (error) {
+            console.error('Error adding reaction:', error);
+            alert('Failed to add reaction. Please try again.');
+          }
+        }
+
+        // Check if user has already reacted
+        if (localStorage.getItem(`reacted_${digestId}`)) {
+          thumbsUpBtn.disabled = true;
+          middleFingerBtn.disabled = true;
+        }
+
+        thumbsUpBtn.addEventListener('click', () => addReaction('thumbs_up'));
+        middleFingerBtn.addEventListener('click', () => addReaction('middle_finger'));
+      </script>
     </article>
 
     <div class="bg-white rounded-lg shadow-md p-8">
       <h2 class="text-2xl font-bold text-gray-900 mb-6">Comments</h2>
       
-      {comments && comments.length > 0 ? (
-        <div class="space-y-6">
-          {comments.map((comment: Comment) => (
-            <div class="border-b border-gray-200 pb-6 last:border-b-0">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="font-semibold text-gray-900">{comment.author_name}</span>
-                <span class="text-gray-500 text-sm">
-                  {new Date(comment.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              <p class="text-gray-700">{comment.content}</p>
-            </div>
-          ))}
+      <!-- Comment Form -->
+      <form id="comment-form" class="mb-8 space-y-4">
+        <div>
+          <label for="author-name" class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+          <input
+            type="text"
+            id="author-name"
+            name="authorName"
+            required
+            maxlength="100"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Your name"
+          />
         </div>
-      ) : (
-        <p class="text-gray-600">No comments yet. Be the first to comment!</p>
-      )}
+        
+        <div>
+          <label for="author-email" class="block text-sm font-medium text-gray-700 mb-1">Email * (never shown publicly)</label>
+          <input
+            type="email"
+            id="author-email"
+            name="authorEmail"
+            required
+            maxlength="200"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="your@email.com"
+          />
+        </div>
+        
+        <div>
+          <label for="author-website" class="block text-sm font-medium text-gray-700 mb-1">Website (optional)</label>
+          <input
+            type="url"
+            id="author-website"
+            name="authorWebsite"
+            maxlength="200"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="https://yoursite.com"
+          />
+        </div>
+        
+        <div>
+          <label for="comment-content" class="block text-sm font-medium text-gray-700 mb-1">Comment *</label>
+          <textarea
+            id="comment-content"
+            name="content"
+            required
+            maxlength="2000"
+            rows="4"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Share your thoughts..."
+          ></textarea>
+          <p class="text-sm text-gray-500 mt-1">Comments require moderation before appearing.</p>
+        </div>
+        
+        <button
+          type="submit"
+          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Post Comment
+        </button>
+        <div id="comment-status" class="hidden"></div>
+      </form>
+
+      <!-- Existing Comments -->
+      <div id="comments-list">
+        {comments && comments.length > 0 ? (
+          <div class="space-y-6">
+            {comments.map((comment: Comment) => (
+              <div class="border-b border-gray-200 pb-6 last:border-b-0">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="font-semibold text-gray-900">{comment.author_name}</span>
+                  {comment.author_website && (
+                    <>
+                      <span class="text-gray-400">•</span>
+                      <a href={comment.author_website} target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 text-sm">
+                        Website
+                      </a>
+                    </>
+                  )}
+                  <span class="text-gray-400">•</span>
+                  <span class="text-gray-500 text-sm">
+                    {new Date(comment.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p class="text-gray-700 whitespace-pre-wrap">{comment.content}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="text-gray-600">No comments yet. Be the first to comment!</p>
+        )}
+      </div>
+      
+      <script define:vars={{ digestId: digest.id }}>
+        const form = document.getElementById('comment-form');
+        const status = document.getElementById('comment-status');
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const submitBtn = form.querySelector('button[type="submit"]');
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Posting...';
+          
+          const formData = new FormData(form);
+          const data = {
+            authorName: formData.get('authorName'),
+            authorEmail: formData.get('authorEmail'),
+            authorWebsite: formData.get('authorWebsite'),
+            content: formData.get('content')
+          };
+
+          try {
+            const response = await fetch(`/api/comments/${digestId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              status.className = 'mt-4 p-4 bg-green-100 text-green-800 rounded-lg';
+              status.textContent = result.message;
+              status.classList.remove('hidden');
+              form.reset();
+            } else {
+              status.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg';
+              status.textContent = 'Error: ' + result.error;
+              status.classList.remove('hidden');
+            }
+          } catch (error) {
+            console.error('Error posting comment:', error);
+            status.className = 'mt-4 p-4 bg-red-100 text-red-800 rounded-lg';
+            status.textContent = 'Failed to post comment. Please try again.';
+            status.classList.remove('hidden');
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Post Comment';
+          }
+        });
+      </script>
     </div>
   </div>
 </body>
