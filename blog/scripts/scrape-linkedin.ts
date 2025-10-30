@@ -9,8 +9,11 @@
  *   npm run scrape-linkedin:dry-run   # Dry run (preview only)
  */
 
-import { chromium } from 'playwright';
+import { chromium } from 'playwright-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { createClient } from '@supabase/supabase-js';
+
+chromium.use(StealthPlugin());
 
 const LINKEDIN_COMPANY_URL = 'https://www.linkedin.com/company/nordic-raven-solutions/posts';
 const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || '';
@@ -55,10 +58,24 @@ async function scrapeLinkedInPosts(): Promise<ScrapedPost[]> {
     
     // Login to LinkedIn first
     console.log('🔐 Logging in to LinkedIn...');
-    await page.goto('https://www.linkedin.com/login', { waitUntil: 'networkidle' });
+    await page.goto('https://www.linkedin.com/login', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1000 + Math.random() * 1000); // Random delay
     
-    await page.fill('#username', linkedinEmail);
-    await page.fill('#password', linkedinPassword);
+    // Type slowly like a human
+    await page.type('#username', linkedinEmail, { delay: 100 + Math.random() * 100 });
+    await page.waitForTimeout(500 + Math.random() * 500);
+    await page.type('#password', linkedinPassword, { delay: 100 + Math.random() * 100 });
+    await page.waitForTimeout(500 + Math.random() * 500);
+    
+    // Move mouse to button before clicking
+    const submitButton = await page.$('button[type="submit"]');
+    if (submitButton) {
+      const box = await submitButton.boundingBox();
+      if (box) {
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.waitForTimeout(300 + Math.random() * 300);
+      }
+    }
     await page.click('button[type="submit"]');
     
     // Wait for navigation after login
@@ -66,8 +83,13 @@ async function scrapeLinkedInPosts(): Promise<ScrapedPost[]> {
       console.log('⚠️  Login redirect timeout, continuing anyway...');
     });
     
-    // Add delay to avoid rate limiting
-    await page.waitForTimeout(2000);
+    // Check if we hit authwall
+    if (page.url().includes('/authwall')) {
+      throw new Error('LinkedIn authwall detected - possible CAPTCHA. Try running locally first to verify account.');
+    }
+    
+    // Add longer delay to avoid rate limiting
+    await page.waitForTimeout(3000 + Math.random() * 2000);
     
     console.log('📡 Navigating to company page...');
     await page.goto(LINKEDIN_COMPANY_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
