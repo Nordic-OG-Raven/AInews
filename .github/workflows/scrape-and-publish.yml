@@ -1,0 +1,51 @@
+name: Scrape LinkedIn & Publish Digests
+
+on:
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  scrape-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: blog/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./blog
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./blog
+        run: npx playwright install chromium
+
+      - name: Scrape LinkedIn posts
+        working-directory: ./blog
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run scrape-linkedin
+
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "❌ LinkedIn scraper failed!"
+          echo "Check the logs at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # TODO: Add email notification via Resend API
+
+      - name: Send success notification
+        if: success()
+        run: |
+          echo "✅ LinkedIn scraper completed successfully!"
+          # TODO: Trigger email blast to subscribers via Resend API
+
