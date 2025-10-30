@@ -16,7 +16,9 @@
     "@astrojs/cloudflare": "^12.6.10",
     "@supabase/supabase-js": "^2.77.0",
     "@tailwindcss/vite": "^4.1.16",
+    "@xyflow/react": "^12.9.2",
     "astro": "^5.15.2",
+    "lucide-react": "^0.548.0",
     "resend": "^6.3.0",
     "tailwindcss": "^4.1.16"
   },
