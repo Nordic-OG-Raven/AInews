@@ -37,6 +37,7 @@ jobs:
           npx playwright install-deps
       
       - name: Run LinkedIn scraper
+        continue-on-error: true
         env:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
