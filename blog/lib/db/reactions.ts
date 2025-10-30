@@ -1,12 +1,15 @@
 import { createClient } from '../supabase/server';
 import { createAdminClient } from '../supabase/admin';
-import { createHash } from 'crypto';
 
 /**
- * Hash IP address for privacy
+ * Hash IP address for privacy using Web Crypto API (Edge Runtime compatible)
  */
-function hashIp(ip: string): string {
-  return createHash('sha256').update(ip).digest('hex');
+async function hashIp(ip: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(ip);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -52,7 +55,7 @@ export async function addReaction(
   const { error } = await supabase.from('reactions').insert({
     digest_id: digestId,
     reaction_type: reactionType,
-    ip_hash: hashIp(ipAddress),
+    ip_hash: await hashIp(ipAddress),
   });
 
   if (error) {
@@ -80,7 +83,7 @@ export async function hasUserReacted(
     .from('reactions')
     .select('id')
     .eq('digest_id', digestId)
-    .eq('ip_hash', hashIp(ipAddress))
+    .eq('ip_hash', await hashIp(ipAddress))
     .single();
 
   return !!data;

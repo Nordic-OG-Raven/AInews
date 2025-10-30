@@ -1,13 +1,16 @@
 import { createClient } from '../supabase/server';
 import { createAdminClient } from '../supabase/admin';
 import type { Comment } from '../types';
-import { createHash } from 'crypto';
 
 /**
- * Hash email for privacy
+ * Hash email for privacy using Web Crypto API (Edge Runtime compatible)
  */
-function hashEmail(email: string): string {
-  return createHash('sha256').update(email.toLowerCase()).digest('hex');
+async function hashEmail(email: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(email.toLowerCase());
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -66,7 +69,7 @@ export async function createComment(data: {
     digest_id: data.digestId,
     parent_comment_id: data.parentCommentId || null,
     author_name: data.authorName,
-    author_email_hash: hashEmail(data.authorEmail),
+    author_email_hash: await hashEmail(data.authorEmail),
     author_website: data.authorWebsite || null,
     content: data.content,
     approved: false, // Requires admin approval
