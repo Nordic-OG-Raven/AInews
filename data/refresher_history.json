@@ -1,12 +1,13 @@
 {
   "data_science": {
     "recent": [
-      "Cross-Validation",
-      "Logistic Regression",
-      "Bayes Theorem",
-      "SQL Windows",
       "EDA Principles",
-      "Linear Regression"
+      "Linear Regression",
+      "SQL Windows",
+      "Logistic Regression",
+      "Cross-Validation",
+      "Bayes Theorem",
+      "Central Limit Theorem"
     ],
     "last_shown": {
       "Cross-Validation": "2025-10-21",
@@ -14,19 +15,22 @@
       "SQL Windows": "2025-10-26",
       "EDA Principles": "2025-10-26",
       "Linear Regression": "2025-10-26",
-      "Logistic Regression": "2025-10-26"
+      "Logistic Regression": "2025-10-26",
+      "Central Limit Theorem": "2025-10-26"
     }
   },
   "ai_business": {
     "recent": [
       "Term Sheet Basics",
+      "Go-to-Market Strategy",
       "Blue\u2013Green Deploys",
       "Minimum Viable Product (MVP)"
     ],
     "last_shown": {
       "Blue\u2013Green Deploys": "2025-10-22",
       "Term Sheet Basics": "2025-10-22",
-      "Minimum Viable Product (MVP)": "2025-10-22"
+      "Minimum Viable Product (MVP)": "2025-10-22",
+      "Go-to-Market Strategy": "2025-10-29"
     }
   },
   "ai_ethics": {
@@ -37,6 +41,14 @@
     "last_shown": {
       "Causality vs Correlation": "2025-10-24",
       "Data Governance": "2025-10-24"
+    }
+  },
+  "ml_research": {
+    "recent": [
+      "Universal Approximation"
+    ],
+    "last_shown": {
+      "Universal Approximation": "2025-10-27"
     }
   }
 }
