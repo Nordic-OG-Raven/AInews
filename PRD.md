@@ -875,7 +875,402 @@ Decision Rules:
 
 ---
 
-**Document Version**: 4.0
-**Last Updated**: October 25, 2025
-**Status**: Production-ready with advanced agent features
+## 9. Public Blog Platform (ainewsblog.jonashaahr.com)
+
+### 9.1 Vision
+A public-facing blog that showcases past AI News digests with community engagement features. Transforms the email-based digest into a discoverable, searchable archive with social features.
+
+### 9.2 Core Features ✅
+
+#### 9.2.1 Past Digests Archive
+**Status**: Planned
+
+**Features**:
+- Display all historical digests from `/outputs/email_archives/`
+- Organized by date (newest first)
+- Category filters (ML Monday, Business Wednesday, Ethics Friday, Data Saturday)
+- Search functionality (full-text search across all articles)
+- Pagination for performance
+- Rich preview cards with:
+  - Published date
+  - Number of articles
+  - Category badge
+  - View count
+  - Comment/reaction counts
+
+**Technical Implementation**:
+- Parse HTML email archives into structured data
+- Store in Supabase database
+- SSR/SSG with Next.js for SEO
+- Full-text search with Postgres
+
+#### 9.2.2 Weekly Auto-Update via LinkedIn Scraping
+**Status**: Planned
+
+**Workflow**:
+1. **Saturday-Friday**: Generate digests locally, manually filter, post to LinkedIn
+2. **Sunday 00:00 UTC**: GitHub Action runs automated scraper
+   - Scrapes last 7 days of posts from `linkedin.com/company/nordic-raven-solutions`
+   - Extracts article titles, summaries, links from each post
+   - Parses structured content from LinkedIn post format
+   - Creates new blog post entry in Supabase
+   - Sends email to subscribers via Resend API
+3. **Human-in-the-loop**: Admin reviews/edits scraped content before publishing (see Admin Panel)
+
+**Technical Implementation**:
+- GitHub Actions cron schedule (`0 0 * * 0` = Sunday midnight)
+- Playwright for LinkedIn scraping (headless browser, free)
+- Parse LinkedIn HTML structure to extract digest content
+- Fallback: Manual upload if scraping fails
+- Store in Supabase with `status: 'draft'` until admin approves
+
+**Why LinkedIn Scraping**:
+- LinkedIn API rejected (not a real business)
+- Human already filters email → LinkedIn (quality control happens there)
+- LinkedIn is the source of truth for published content
+- Free solution (no API costs)
+
+#### 9.2.3 Comments System
+**Status**: Planned
+
+**Features**:
+- Nested comments (max 2 levels: comment + reply)
+- User identification:
+  - Name + Email (required)
+  - Email hashed, never displayed publicly
+  - Optional website URL
+  - Gravatar support
+- Markdown support for formatting
+- Timestamp display (relative: "2 hours ago")
+- Edit window: 15 minutes after posting
+- Admin moderation (see Admin Panel)
+- Spam protection:
+  - Rate limiting (3 comments per hour per IP)
+  - Email verification required
+  - Basic profanity filter
+  - Admin approval for first comment (optional)
+
+**Technical Implementation**:
+- Supabase table: `comments`
+  - `id`, `digest_id`, `parent_comment_id`, `author_name`, `author_email_hash`, `author_website`, `content`, `created_at`, `edited_at`, `approved`
+- Row-Level Security (RLS) for privacy
+- Resend API for email notifications to admin on new comments
+
+#### 9.2.4 Reactions System (👍/🖕)
+**Status**: Planned
+
+**Features**:
+- Two reaction types per digest:
+  - 👍 Thumbs Up - "This digest was valuable"
+  - 🖕 Middle Finger - "This digest was not valuable"
+- Per-IP rate limiting (1 reaction per digest per IP)
+- Real-time counter display
+- Anonymous (no user account required)
+- Sticky reaction (can't change once submitted)
+- Visual feedback animation on click
+
+**Technical Implementation**:
+- Supabase table: `reactions`
+  - `id`, `digest_id`, `reaction_type` (thumbs_up/middle_finger), `ip_hash`, `created_at`
+- Unique constraint on `(digest_id, ip_hash)` prevents duplicates
+- Server-side IP hashing for privacy
+- Optimistic UI updates with revalidation
+
+#### 9.2.5 Email Subscription System
+**Status**: Planned
+
+**Features**:
+- Subscribe form on homepage + digest pages
+- Double opt-in (confirmation email)
+- Weekly digest email (Sunday 00:00, after auto-update)
+- Email content:
+  - Subject: "New AI News Digest: [Category] - [Date]"
+  - Plain text + HTML versions
+  - Article titles + summaries + "Read More" links to blog
+  - Unsubscribe link in footer
+- Preference management:
+  - Choose specific categories (ML Monday, Business Wednesday, etc.)
+  - Choose frequency (every digest, weekly summary, monthly)
+- GDPR-compliant:
+  - Clear consent checkbox
+  - Easy unsubscribe (one-click)
+  - Data export available
+  - Privacy policy link
+
+**Technical Implementation**:
+- Supabase table: `subscribers`
+  - `id`, `email`, `verified`, `categories` (array), `frequency`, `subscribed_at`, `verification_token`, `unsubscribe_token`
+- Resend API for email delivery (free tier: 3,000 emails/month)
+- GitHub Actions cron for Sunday email blast
+- Unsubscribe = update `subscribers` table (soft delete)
+
+#### 9.2.6 Admin Panel
+**Status**: Planned
+
+**Access**:
+- Password-protected route: `/admin`
+- Environment variable: `ADMIN_PASSWORD`
+- Session-based auth (expires after 24 hours)
+- No user accounts (single admin only)
+
+**Features**:
+
+**A. Digest Management**
+- View all digests (published + drafts)
+- Edit scraped content before publishing:
+  - Add/remove articles
+  - Edit article titles/summaries
+  - Reorder articles
+  - Change category
+- Publish/unpublish toggle
+- Delete digest (soft delete)
+- Preview digest before publishing
+- Manually create digest (bypass scraper)
+
+**B. Comment Moderation**
+- View all comments (newest first)
+- Filter by digest, author, status (approved/pending/spam)
+- Approve/reject pending comments
+- Delete inappropriate comments
+- Ban email addresses (block future comments)
+- View comment author email (for spam reporting)
+
+**C. Subscriber Management**
+- View all subscribers (sortable by date, email)
+- See subscription preferences (categories, frequency)
+- Manually add/remove subscribers
+- Export subscriber list as CSV
+- View unsubscribe rate over time
+- Send test email to verify delivery
+
+**D. Analytics Dashboard**
+- **Engagement Metrics**:
+  - Total page views (last 7 days, 30 days, all-time)
+  - Most popular digests (by views)
+  - Average time on page
+  - Reaction distribution (👍 vs 🖕 ratio)
+  - Comment count per digest
+- **Subscriber Metrics**:
+  - Total subscribers
+  - New subscribers this week
+  - Unsubscribe rate
+  - Email open rate (if Resend provides)
+- **Content Metrics**:
+  - Total digests published
+  - Average articles per digest
+  - Most common categories
+- **Charts**:
+  - Line chart: Page views over time
+  - Pie chart: Reaction breakdown
+  - Bar chart: Top 10 digests by engagement
+
+**E. Scraper Management**
+- View last scraper run status (success/fail)
+- View scraped content before publishing
+- Manually trigger scraper run
+- Skip next scheduled run
+- View scraper logs/errors
+- Test scraper (dry run, no database write)
+
+**Technical Implementation**:
+- Next.js protected routes with middleware
+- Supabase queries with RLS bypass for admin
+- React Admin UI components (shadcn/ui)
+- Charts with Recharts
+- CSV export with Papa Parse
+
+#### 9.2.7 MAS Workflow Visualization
+**Status**: Planned
+
+**Features**:
+- Interactive diagram showing the Multi-Agent System workflow
+- Animated flow from article fetching → filtering → publishing
+- Click each node to see details:
+  - Agent 1: Relevance Gatekeeper (with example prompts)
+  - Agent 2: Quality Scorer (scoring dimensions)
+  - Agent 3: Negative Filter (veto criteria)
+- Live stats (if available):
+  - Articles fetched this week
+  - Rejection rate
+  - Average quality score
+- Walkthrough tutorial (step-by-step guide)
+- Link to PRD for full technical details
+
+**Technical Implementation**:
+- React Flow for interactive diagram
+- Framer Motion for animations
+- Static content (workflow doesn't change)
+- Optional: Fetch live stats from Supabase if we log MAS runs
+
+#### 9.2.8 RSS Feed
+**Status**: Planned
+
+**Features**:
+- Standard RSS 2.0 feed at `/rss.xml`
+- All published digests (last 50 items)
+- Full article content in feed (not just summaries)
+- iTunes podcast tags (in case we add audio later)
+- Auto-discovery tag in HTML `<head>`
+
+**Technical Implementation**:
+- Next.js API route generates XML
+- Revalidate on new publish
+- Include GUID for proper feed reader handling
+
+#### 9.2.9 Share Buttons
+**Status**: Planned
+
+**Features**:
+- Share each digest on:
+  - LinkedIn (pre-filled post text)
+  - Twitter/X (with hashtags: #AI #MachineLearning)
+  - Email (mailto: link with subject + body)
+  - Copy link to clipboard
+- Native share API on mobile
+- Share count display (optional)
+- Open Graph tags for rich previews
+
+**Technical Implementation**:
+- React Share library
+- Next.js metadata API for OG tags
+- Custom OG image per digest (auto-generated)
+
+### 9.3 Tech Stack
+
+**Frontend**:
+- **Next.js 14** (App Router)
+- **TypeScript**
+- **Tailwind CSS** + **shadcn/ui** components
+- **React Hook Form** (forms)
+- **Zod** (validation)
+
+**Backend**:
+- **Supabase** (Postgres database, free tier)
+  - Tables: `digests`, `articles`, `comments`, `reactions`, `subscribers`
+  - Row-Level Security (RLS) for data protection
+  - Real-time subscriptions for comments/reactions
+
+**Automation**:
+- **GitHub Actions** (cron jobs)
+- **Playwright** (LinkedIn scraping)
+
+**Email**:
+- **Resend** (email delivery, free tier)
+
+**Deployment**:
+- **Cloudflare Pages** (free hosting)
+- **Custom domain**: `ainewsblog.jonashaahr.com`
+
+### 9.4 Database Schema
+
+```sql
+-- Digests
+CREATE TABLE digests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  category TEXT NOT NULL, -- 'ml_monday', 'business_wednesday', etc.
+  published_date DATE NOT NULL,
+  content JSONB NOT NULL, -- Array of articles
+  status TEXT DEFAULT 'draft', -- 'draft', 'published'
+  view_count INTEGER DEFAULT 0,
+  linkedin_post_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Comments
+CREATE TABLE comments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  digest_id UUID REFERENCES digests(id) ON DELETE CASCADE,
+  parent_comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+  author_name TEXT NOT NULL,
+  author_email_hash TEXT NOT NULL,
+  author_website TEXT,
+  content TEXT NOT NULL,
+  approved BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  edited_at TIMESTAMPTZ
+);
+
+-- Reactions
+CREATE TABLE reactions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  digest_id UUID REFERENCES digests(id) ON DELETE CASCADE,
+  reaction_type TEXT NOT NULL, -- 'thumbs_up', 'middle_finger'
+  ip_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(digest_id, ip_hash)
+);
+
+-- Subscribers
+CREATE TABLE subscribers (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  verified BOOLEAN DEFAULT FALSE,
+  categories TEXT[] DEFAULT ARRAY['all'],
+  frequency TEXT DEFAULT 'weekly', -- 'every', 'weekly', 'monthly'
+  verification_token TEXT,
+  unsubscribe_token TEXT UNIQUE,
+  subscribed_at TIMESTAMPTZ DEFAULT NOW(),
+  unsubscribed_at TIMESTAMPTZ
+);
+
+-- Scraper runs (audit log)
+CREATE TABLE scraper_runs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  status TEXT NOT NULL, -- 'success', 'failed', 'skipped'
+  posts_scraped INTEGER,
+  error_message TEXT,
+  run_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### 9.5 Deployment Plan
+
+**Phase 1: Foundation** (Week 1)
+- ✅ Set up Next.js project in `/Users/jonas/AInews/blog`
+- ✅ Set up Supabase project + database schema
+- ✅ Deploy skeleton site to Cloudflare Pages
+- ✅ Configure DNS: `ainewsblog.jonashaahr.com`
+
+**Phase 2: Content** (Week 1-2)
+- ✅ Parse email archives into database
+- ✅ Build digest listing page
+- ✅ Build individual digest page
+- ✅ Add search + filtering
+- ✅ Add RSS feed
+
+**Phase 3: Engagement** (Week 2-3)
+- ✅ Add reactions system (👍/🖕)
+- ✅ Add comments system
+- ✅ Add email subscription form
+- ✅ Add share buttons
+
+**Phase 4: Automation** (Week 3-4)
+- ✅ Build LinkedIn scraper with Playwright
+- ✅ Set up GitHub Actions cron job
+- ✅ Test scraper + email delivery
+- ✅ Add error handling + notifications
+
+**Phase 5: Admin** (Week 4-5)
+- ✅ Build admin authentication
+- ✅ Build digest management UI
+- ✅ Build comment moderation UI
+- ✅ Build subscriber management UI
+- ✅ Build analytics dashboard
+- ✅ Build scraper management UI
+
+**Phase 6: Polish** (Week 5-6)
+- ✅ Add MAS workflow visualization
+- ✅ Add OG images
+- ✅ Performance optimization
+- ✅ SEO optimization
+- ✅ Mobile responsive testing
+- ✅ Launch! 🚀
+
+---
+
+**Document Version**: 5.0
+**Last Updated**: October 30, 2025
+**Status**: Production-ready MAS + Blog platform in development
 
