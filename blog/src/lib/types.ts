@@ -12,7 +12,7 @@ export interface Digest {
   title: string;
   category: DigestCategory;
   published_date: string;
-  articles: Article[];
+  content: Article[]; // Changed from articles to content
   view_count: number;
   status: 'draft' | 'published';
   created_at: string;
