@@ -9,15 +9,16 @@
     "lint": "eslint",
     "scrape-linkedin": "tsx scripts/scrape-linkedin.ts",
     "scrape-linkedin:dry-run": "tsx scripts/scrape-linkedin.ts --dry-run",
-    "import-digests": "tsx scripts/import-email-archives.ts",
-    "import-digests:dry-run": "tsx scripts/import-email-archives.ts --dry-run",
     "playwright:install": "playwright install chromium"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-tabs": "^1.1.13",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.77.0",
     "class-variance-authority": "^0.7.1",
