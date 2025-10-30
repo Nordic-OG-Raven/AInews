@@ -9,6 +9,8 @@
     "lint": "eslint",
     "scrape-linkedin": "tsx scripts/scrape-linkedin.ts",
     "scrape-linkedin:dry-run": "tsx scripts/scrape-linkedin.ts --dry-run",
+    "import-digests": "tsx scripts/import-email-archives.ts",
+    "import-digests:dry-run": "tsx scripts/import-email-archives.ts --dry-run",
     "playwright:install": "playwright install chromium"
   },
   "dependencies": {
@@ -23,6 +25,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.548.0",
     "next": "16.0.1",
+    "node-html-parser": "^7.0.1",
     "playwright": "^1.56.1",
     "react": "19.2.0",
     "react-dom": "19.2.0",

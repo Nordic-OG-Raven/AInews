@@ -4,40 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Calendar, ThumbsUp, MessageCircle } from "lucide-react";
 import Link from "next/link";
-
-// TODO: Replace with actual data from Supabase
-const MOCK_DIGESTS = [
-  {
-    id: "1",
-    title: "ML Monday - Latest Advances in Neural Architecture",
-    category: "ml_monday",
-    published_date: "2025-10-27",
-    excerpt: "Exploring breakthrough developments in transformer architectures and efficient training methods...",
-    view_count: 234,
-    thumbs_up_count: 18,
-    comment_count: 5,
-  },
-  {
-    id: "2",
-    title: "Data Saturday - Time Series Analysis Techniques",
-    category: "data_saturday",
-    published_date: "2025-10-25",
-    excerpt: "Advanced statistical methods for forecasting and anomaly detection in temporal data...",
-    view_count: 189,
-    thumbs_up_count: 14,
-    comment_count: 3,
-  },
-  {
-    id: "3",
-    title: "Ethics Friday - AI Bias and Fairness in Production",
-    category: "ethics_friday",
-    published_date: "2025-10-24",
-    excerpt: "Examining real-world cases of algorithmic bias and strategies for building fair ML systems...",
-    view_count: 156,
-    thumbs_up_count: 22,
-    comment_count: 8,
-  },
-];
+import { getPublishedDigests, getDigestStats } from "@/lib/db/digests";
 
 const CATEGORY_COLORS = {
   ml_monday: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
@@ -53,7 +20,26 @@ const CATEGORY_LABELS = {
   data_saturday: "Data Saturday",
 };
 
-export default function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; search?: string; page?: string }>;
+}) {
+  const params = await searchParams;
+  const category = params.category || 'all';
+  const searchQuery = params.search;
+  const page = parseInt(params.page || '1');
+
+  // Fetch digests from Supabase
+  const { digests, total } = await getPublishedDigests(page, 12, category, searchQuery);
+  const stats = await getDigestStats();
+
+  // Calculate excerpt from first article
+  const digestsWithExcerpts = digests.map(digest => ({
+    ...digest,
+    excerpt: digest.content[0]?.summary?.slice(0, 150) + '...' || 'Read more...',
+  }));
+
   return (
     <div className="container mx-auto px-4 py-12">
       {/* Hero Section */}
@@ -104,16 +90,45 @@ export default function HomePage() {
 
       {/* Filter Tabs */}
       <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
-        <Button variant="default" size="sm">All</Button>
-        <Button variant="outline" size="sm">ML Monday</Button>
-        <Button variant="outline" size="sm">Business Wednesday</Button>
-        <Button variant="outline" size="sm">Ethics Friday</Button>
-        <Button variant="outline" size="sm">Data Saturday</Button>
+        <Link href="/">
+          <Button variant={category === 'all' ? 'default' : 'outline'} size="sm">
+            All ({stats.total})
+          </Button>
+        </Link>
+        <Link href="/?category=ml_monday">
+          <Button variant={category === 'ml_monday' ? 'default' : 'outline'} size="sm">
+            ML Monday ({stats.byCategory.ml_monday})
+          </Button>
+        </Link>
+        <Link href="/?category=business_wednesday">
+          <Button variant={category === 'business_wednesday' ? 'default' : 'outline'} size="sm">
+            Business Wednesday ({stats.byCategory.business_wednesday})
+          </Button>
+        </Link>
+        <Link href="/?category=ethics_friday">
+          <Button variant={category === 'ethics_friday' ? 'default' : 'outline'} size="sm">
+            Ethics Friday ({stats.byCategory.ethics_friday})
+          </Button>
+        </Link>
+        <Link href="/?category=data_saturday">
+          <Button variant={category === 'data_saturday' ? 'default' : 'outline'} size="sm">
+            Data Saturday ({stats.byCategory.data_saturday})
+          </Button>
+        </Link>
       </div>
+
+      {/* No Results */}
+      {digestsWithExcerpts.length === 0 && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground text-lg">
+            No digests found. Check back soon!
+          </p>
+        </div>
+      )}
 
       {/* Digest Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {MOCK_DIGESTS.map((digest) => (
+        {digestsWithExcerpts.map((digest) => (
           <Link key={digest.id} href={`/digest/${digest.id}`}>
             <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader>
