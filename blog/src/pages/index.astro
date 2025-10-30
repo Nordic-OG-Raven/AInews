@@ -3,11 +3,32 @@ import { supabase } from '../lib/supabase';
 import type { Digest } from '../lib/types';
 import SubscribeForm from '../components/SubscribeForm.astro';
 
-const { data: digests } = await supabase
+// Get query params
+const category = Astro.url.searchParams.get('category');
+const search = Astro.url.searchParams.get('search');
+const page = parseInt(Astro.url.searchParams.get('page') || '1');
+const pageSize = 12;
+
+// Build query
+let query = supabase
   .from('digests_with_counts')
-  .select('*')
-  .eq('status', 'published')
-  .order('published_date', { ascending: false });
+  .select('*', { count: 'exact' })
+  .eq('status', 'published');
+
+if (category && category !== 'all') {
+  query = query.eq('category', category);
+}
+
+if (search) {
+  query = query.textSearch('search_vector', search);
+}
+
+query = query
+  .order('published_date', { ascending: false })
+  .range((page - 1) * pageSize, page * pageSize - 1);
+
+const { data: digests, count } = await query;
+const totalPages = Math.ceil((count || 0) / pageSize);
 
 const CATEGORY_COLORS = {
   ml_monday: 'bg-blue-100 text-blue-800',
@@ -58,6 +79,52 @@ const CATEGORY_NAMES = {
 
     <SubscribeForm />
 
+    <!-- Category Filters -->
+    <div class="mb-8">
+      <div class="flex flex-wrap gap-2">
+        <a href="/" class={`px-4 py-2 rounded-lg transition-colors ${!category || category === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+          All
+        </a>
+        <a href="/?category=ml_monday" class={`px-4 py-2 rounded-lg transition-colors ${category === 'ml_monday' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+          ML Monday
+        </a>
+        <a href="/?category=tech_tuesday" class={`px-4 py-2 rounded-lg transition-colors ${category === 'tech_tuesday' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+          Tech Tuesday
+        </a>
+        <a href="/?category=web_wednesday" class={`px-4 py-2 rounded-lg transition-colors ${category === 'web_wednesday' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+          Web Wednesday
+        </a>
+        <a href="/?category=thought_thursday" class={`px-4 py-2 rounded-lg transition-colors ${category === 'thought_thursday' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+          Thought Thursday
+        </a>
+        <a href="/?category=fun_friday" class={`px-4 py-2 rounded-lg transition-colors ${category === 'fun_friday' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100'}`}>
+          Fun Friday
+        </a>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="mb-8">
+      <form action="/" method="GET" class="flex gap-2">
+        {category && <input type="hidden" name="category" value={category} />}
+        <input
+          type="text"
+          name="search"
+          value={search || ''}
+          placeholder="Search digests..."
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          Search
+        </button>
+        {search && (
+          <a href={category ? `/?category=${category}` : '/'} class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+            Clear
+          </a>
+        )}
+      </form>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {digests?.map((digest: Digest) => (
         <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -89,8 +156,42 @@ const CATEGORY_NAMES = {
     </div>
 
     {!digests || digests.length === 0 && (
-      <div class="text-center py-12">
-        <p class="text-gray-600 text-lg">No digests published yet. Check back soon!</p>
+      <div class="text-center py-12 col-span-full">
+        <p class="text-gray-600 text-lg">
+          {search ? 'No results found. Try a different search term.' : 'No digests published yet. Check back soon!'}
+        </p>
+      </div>
+    )}
+
+    <!-- Pagination -->
+    {totalPages > 1 && (
+      <div class="col-span-full mt-8 flex justify-center gap-2">
+        {page > 1 && (
+          <a 
+            href={`/?${new URLSearchParams({ ...(category && { category }), ...(search && { search }), page: String(page - 1) }).toString()}`}
+            class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            ← Previous
+          </a>
+        )}
+        
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+          <a
+            href={`/?${new URLSearchParams({ ...(category && { category }), ...(search && { search }), page: String(p) }).toString()}`}
+            class={`px-4 py-2 rounded-lg transition-colors ${p === page ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 hover:bg-gray-50'}`}
+          >
+            {p}
+          </a>
+        ))}
+        
+        {page < totalPages && (
+          <a
+            href={`/?${new URLSearchParams({ ...(category && { category }), ...(search && { search }), page: String(page + 1) }).toString()}`}
+            class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Next →
+          </a>
+        )}
       </div>
     )}
   </div>

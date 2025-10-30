@@ -40,6 +40,16 @@ jobs:
           cd blog
           npm run scrape-linkedin
       
+      - name: Send weekly email blast
+        env:
+          PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          PUBLIC_SITE_URL: https://ainewsblog.jonashaahr.com
+        run: |
+          cd blog
+          npm run send-email
+      
       - name: Notify on failure
         if: failure()
         uses: actions/github-script@v7

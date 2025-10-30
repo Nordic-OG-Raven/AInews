@@ -183,13 +183,15 @@ const subscribersCount = subscribers?.filter(s => s.verified).length || 0;
                   <div class="flex gap-2">
                     <button 
                       onclick={`approveComment('${comment.id}')`}
-                      class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                      class="approve-btn px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                      data-id={comment.id}
                     >
                       Approve
                     </button>
                     <button 
                       onclick={`deleteComment('${comment.id}')`}
-                      class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                      class="delete-btn px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                      data-id={comment.id}
                     >
                       Delete
                     </button>
@@ -207,9 +209,9 @@ const subscribersCount = subscribers?.filter(s => s.verified).length || 0;
         <div id="subscribers-tab" class="tab-content hidden p-6">
           <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-gray-900">Subscribers</h2>
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <a href="/api/admin/subscribers/export" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
               Export CSV
-            </button>
+            </a>
           </div>
           <div class="space-y-2">
             {subscribers && subscribers.length > 0 ? subscribers.map(sub => (
@@ -257,15 +259,41 @@ const subscribersCount = subscribers?.filter(s => s.verified).length || 0;
     // Comment moderation
     async function approveComment(id) {
       if (confirm('Approve this comment?')) {
-        // TODO: Implement API call
-        alert('Comment approved! (API not yet implemented)');
+        try {
+          const response = await fetch(`/api/admin/comments/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ approved: true })
+          });
+          
+          if (response.ok) {
+            location.reload();
+          } else {
+            alert('Failed to approve comment');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Failed to approve comment');
+        }
       }
     }
 
     async function deleteComment(id) {
       if (confirm('Delete this comment permanently?')) {
-        // TODO: Implement API call
-        alert('Comment deleted! (API not yet implemented)');
+        try {
+          const response = await fetch(`/api/admin/comments/${id}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            location.reload();
+          } else {
+            alert('Failed to delete comment');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Failed to delete comment');
+        }
       }
     }
   </script>

@@ -18,6 +18,16 @@ const { data: comments } = await supabase
   .eq('approved', true)
   .order('created_at', { ascending: false });
 
+// Get related digests (same category, exclude current)
+const { data: relatedDigests } = await supabase
+  .from('digests_with_counts')
+  .select('*')
+  .eq('status', 'published')
+  .eq('category', digest?.category || '')
+  .neq('id', id)
+  .order('published_date', { ascending: false })
+  .limit(3);
+
 if (!digest) {
   return Astro.redirect('/');
 }
@@ -350,6 +360,31 @@ const CATEGORY_NAMES = {
         });
       </script>
     </div>
+
+    <!-- Related Digests -->
+    {relatedDigests && relatedDigests.length > 0 && (
+      <div class="bg-white rounded-lg shadow-md p-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">Related Digests</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {relatedDigests.map((related: Digest) => (
+            <a href={`/digest/${related.id}`} class="block group">
+              <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-500 transition-colors">
+                <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 mb-2">
+                  {related.title}
+                </h3>
+                <p class="text-sm text-gray-600">
+                  {new Date(related.published_date).toLocaleDateString()}
+                </p>
+                <div class="flex gap-4 text-sm text-gray-500 mt-2">
+                  <span>👍 {related.thumbs_up || 0}</span>
+                  <span>💬 {related.comment_count || 0}</span>
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
 
     <SubscribeForm />
   </div>
