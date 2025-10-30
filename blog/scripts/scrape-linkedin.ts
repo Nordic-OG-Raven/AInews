@@ -15,6 +15,8 @@ import { createClient } from '@supabase/supabase-js';
 const LINKEDIN_COMPANY_URL = 'https://www.linkedin.com/company/nordic-raven-solutions/posts';
 const supabaseUrl = process.env.PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const linkedinEmail = process.env.LINKEDIN_EMAIL || '';
+const linkedinPassword = process.env.LINKEDIN_PASSWORD || '';
 const isDryRun = process.argv.includes('--dry-run');
 
 interface Article {
@@ -34,6 +36,10 @@ interface ScrapedPost {
 async function scrapeLinkedInPosts(): Promise<ScrapedPost[]> {
   console.log('🚀 Launching browser...');
   
+  if (!linkedinEmail || !linkedinPassword) {
+    throw new Error('LINKEDIN_EMAIL and LINKEDIN_PASSWORD environment variables are required');
+  }
+  
   const browser = await chromium.launch({ 
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -41,17 +47,33 @@ async function scrapeLinkedInPosts(): Promise<ScrapedPost[]> {
   
   try {
     const context = await browser.newContext({
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       viewport: { width: 1920, height: 1080 }
     });
     
     const page = await context.newPage();
     
-    console.log('📡 Navigating to LinkedIn company page...');
-    await page.goto(LINKEDIN_COMPANY_URL, { waitUntil: 'networkidle', timeout: 30000 });
+    // Login to LinkedIn first
+    console.log('🔐 Logging in to LinkedIn...');
+    await page.goto('https://www.linkedin.com/login', { waitUntil: 'networkidle' });
     
-    // Wait for posts to load
-    await page.waitForSelector('[data-id*="urn:li:activity"]', { timeout: 10000 });
+    await page.fill('#username', linkedinEmail);
+    await page.fill('#password', linkedinPassword);
+    await page.click('button[type="submit"]');
+    
+    // Wait for navigation after login
+    await page.waitForURL('https://www.linkedin.com/feed/', { timeout: 30000 }).catch(() => {
+      console.log('⚠️  Login redirect timeout, continuing anyway...');
+    });
+    
+    // Add delay to avoid rate limiting
+    await page.waitForTimeout(2000);
+    
+    console.log('📡 Navigating to company page...');
+    await page.goto(LINKEDIN_COMPANY_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    
+    // Wait for posts to load (increased timeout)
+    await page.waitForSelector('[data-id*="urn:li:activity"]', { timeout: 20000 });
     
     console.log('🔍 Scraping posts...');
     
