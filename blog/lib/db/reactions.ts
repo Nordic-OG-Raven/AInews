@@ -19,7 +19,7 @@ export async function getReactionCounts(digestId: string): Promise<{
   thumbs_up: number;
   middle_finger: number;
 }> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   const { data } = await supabase
     .from('reactions')

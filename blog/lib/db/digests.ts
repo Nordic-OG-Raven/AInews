@@ -11,7 +11,7 @@ export async function getPublishedDigests(
   category?: string,
   searchQuery?: string
 ): Promise<{ digests: Digest[]; total: number }> {
-  const supabase = await createClient();
+  const supabase = createClient();
   
   let query = supabase
     .from('digests_with_counts')
@@ -110,7 +110,7 @@ export async function getDigestStats(): Promise<{
   total: number;
   byCategory: Record<string, number>;
 }> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
   // Get total count
   const { count: total } = await supabase
